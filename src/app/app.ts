@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, ElementRef, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 
@@ -17,6 +17,9 @@ export class App {
   selectedFolder: string = '';
   selectedFile = '';
   videoSrc = '';
+  currentIndex = -1;
+
+  @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
 
   async selectFolder() {
     try {
@@ -43,6 +46,39 @@ export class App {
     if (selected) {
       const file = await selected.getFile();
       this.videoSrc = URL.createObjectURL(file);
+    }
+  }
+
+  async previous() {
+    if (this.currentIndex > 0) {
+      const newIndex = this.currentIndex - 1;
+      this.selectedFile = this.getFileName(this.files[newIndex]);
+      await this.loadVideo();
+    }
+  }
+
+  async next() {
+    if (this.currentIndex < this.files.length - 1) {
+      const newIndex = this.currentIndex + 1;
+      this.selectedFile = this.getFileName(this.files[newIndex]);
+      await this.loadVideo();
+    }
+  }
+
+  restart() {
+    if (this.videoRef) {
+      this.videoRef.nativeElement.currentTime = 0;
+    }
+  }
+  play() {
+    if (this.videoRef) {
+      this.videoRef.nativeElement.play();
+    }
+  }
+
+  pause() {
+    if (this.videoRef) {
+      this.videoRef.nativeElement.pause();
     }
   }
 

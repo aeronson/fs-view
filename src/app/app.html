@@ -9,6 +9,15 @@
     </div>
   </div>
   <div id="video-block" *ngIf="selectedFile">
-    <video *ngIf="videoSrc" [src]="videoSrc" autoplay muted></video>
+    <div class="video-container">
+      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" autoplay muted></video>
+    </div>
+    <div class="video-controls">
+      <button (click)="play()">Play</button>
+      <button (click)="pause()">Pause</button>
+      <button (click)="restart()">Restart</button>
+      <button (click)="previous()">Previous</button>
+      <button (click)="next()">Next</button>
+    </div>
   </div>
 </div>
