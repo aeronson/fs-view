@@ -9,6 +9,6 @@
     </div>
   </div>
   <div id="video-block" *ngIf="selectedFile">
-    <video *ngIf="videoSrc" [src]="videoSrc" controls></video>
+    <video *ngIf="videoSrc" [src]="videoSrc" autoplay muted></video>
   </div>
 </div>

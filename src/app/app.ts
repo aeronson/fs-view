@@ -29,6 +29,7 @@ export class App {
           this.files.push(entry);
         }
       }
+      this.files.sort((a, b) => this.getFileName(a).localeCompare(this.getFileName(b)));
     } catch (e) {
       console.error(e);
     }

@@ -17,8 +17,23 @@
 #video-block {
     max-width: 800px;
     max-height: 800px;
+
+    video::-webkit-media-controls {
+        display: none !important;
+    }
+
+    video::-webkit-media-controls-enclosure {
+        display: none !important;
+    }
+
+    video::-webkit-media-controls-panel {
+        display: none !important;
+    }
+
     video {
+        width: auto;
         height: auto;
-        width: 100%;
+        max-width: 100%;
+        display: block;
     }
 }
