@@ -1,0 +1,24 @@
+#main {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+}
+
+#file-block {
+    display: flex;
+    flex-direction: column;
+
+    #file-list {
+        margin-top: 10px;
+        width: 20rem;
+    }
+}
+
+#video-block {
+    max-width: 800px;
+    max-height: 800px;
+    video {
+        height: auto;
+        width: 100%;
+    }
+}
