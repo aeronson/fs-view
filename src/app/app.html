@@ -10,7 +10,8 @@
   </div>
   <div id="video-block" *ngIf="selectedFile">
     <div class="video-container">
-      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()" (loadeddata)="onLoadedData()"></video>
+      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()"
+        (loadeddata)="onLoadedData()"></video>
     </div>
     <div class="video-controls">
       <button (click)="play()">Play</button>
@@ -19,5 +20,9 @@
       <button (click)="previous()">Previous</button>
       <button (click)="next()">Next</button>
     </div>
+    <div id="chart-block">
+      <canvas #chartRef *ngIf="funscriptData" width="800" height="200"></canvas>
+    </div>
   </div>
+
 </div>
