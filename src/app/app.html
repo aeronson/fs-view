@@ -13,7 +13,7 @@
       <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()"
         (loadeddata)="onLoadedData()" (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
-    <input type="range" [min]="0" [max]="videoDuration" [(ngModel)]="currentTime" (input)="seekVideo()" *ngIf="videoDuration > 0">
+    <input type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()" *ngIf="videoDuration > 0">
     <div class="video-controls">
       <button (click)="play()">Play</button>
       <button (click)="pause()">Pause</button>
@@ -22,7 +22,7 @@
       <button (click)="next()">Next</button>
     </div>
     <div id="chart-block">
-      <canvas #chartRef *ngIf="funscriptData" width="800" height="200"></canvas>
+      <canvas #chartRef *ngIf="funscriptData" width="600" height="200"></canvas>
     </div>
   </div>
 </div>

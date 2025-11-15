@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import Chart from 'chart.js/auto';
@@ -34,6 +34,18 @@ export class App {
 
   constructor(private cdr: ChangeDetectorRef) {
     Chart.register(annotationPlugin);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (event.key === ' ') {
+      event.preventDefault();
+      if (this.isPlaying) {
+        this.pause();
+      } else {
+        this.play();
+      }
+    }
   }
 
   async selectFolder() {
