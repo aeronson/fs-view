@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, signal, ViewChild } from '@angular/core';
+import { Component, signal, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 
@@ -18,6 +18,7 @@ export class App {
   selectedFile = '';
   videoSrc = '';
   currentIndex = -1;
+  isPlaying = false;
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
 
@@ -44,23 +45,28 @@ export class App {
     if (!this.selectedFile) return;
     const selected = this.files.find(f => this.getFileName(f) === this.selectedFile);
     if (selected) {
+      this.currentIndex = this.files.indexOf(selected);
       const file = await selected.getFile();
       this.videoSrc = URL.createObjectURL(file);
     }
   }
 
+  onLoadedData() {
+    if (this.isPlaying) {
+      this.play();
+    }
+  }
+
   async previous() {
     if (this.currentIndex > 0) {
-      const newIndex = this.currentIndex - 1;
-      this.selectedFile = this.getFileName(this.files[newIndex]);
+      this.selectedFile = this.getFileName(this.files[this.currentIndex - 1]);
       await this.loadVideo();
     }
   }
 
   async next() {
     if (this.currentIndex < this.files.length - 1) {
-      const newIndex = this.currentIndex + 1;
-      this.selectedFile = this.getFileName(this.files[newIndex]);
+      this.selectedFile = this.getFileName(this.files[this.currentIndex + 1]);
       await this.loadVideo();
     }
   }
@@ -70,14 +76,17 @@ export class App {
       this.videoRef.nativeElement.currentTime = 0;
     }
   }
+
   play() {
     if (this.videoRef) {
+      this.isPlaying = true;
       this.videoRef.nativeElement.play();
     }
   }
 
   pause() {
     if (this.videoRef) {
+      this.isPlaying = false;
       this.videoRef.nativeElement.pause();
     }
   }
