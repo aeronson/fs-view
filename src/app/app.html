@@ -1,9 +1,7 @@
 <div id="main">
   <div id="file-block">
-    <div class="file-controls-block">
-      <button (click)="selectFolder()">Select Folder</button>
-      <input type="text" [(ngModel)]="selectedFolder" readonly>
-    </div>
+    <button (click)="selectFolder()">Select Folder</button>
+    <input type="text" [(ngModel)]="selectedFolder" readonly>
     <div id="file-list">
       <select [size]="files.length" [(ngModel)]="selectedFile" *ngIf="files.length" (change)="loadVideo()">
         <option *ngFor="let f of files" [value]="getFileName(f)">{{getFileName(f)}}</option>
@@ -12,7 +10,7 @@
   </div>
   <div id="video-block" *ngIf="selectedFile">
     <div class="video-container">
-      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="next()" (loadeddata)="onLoadedData()"></video>
+      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()" (loadeddata)="onLoadedData()"></video>
     </div>
     <div class="video-controls">
       <button (click)="play()">Play</button>

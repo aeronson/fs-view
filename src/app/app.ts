@@ -19,6 +19,7 @@ export class App {
   videoSrc = '';
   currentIndex = -1;
   isPlaying = false;
+  repeatCount = 0;
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
 
@@ -29,11 +30,15 @@ export class App {
       this.files = [];
 
       for await (const entry of dirHandle.values()) {
-        if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp4')) {
+        if (entry.kind === 'file' && /^\d{4}\.mp4$/i.test(entry.name)) {
           this.files.push(entry);
         }
       }
       this.files.sort((a, b) => this.getFileName(a).localeCompare(this.getFileName(b)));
+      if (this.files.length > 0) {
+        this.selectedFile = this.getFileName(this.files[0]);
+        await this.loadVideo();
+      }
     } catch (e) {
       console.error(e);
     }
@@ -48,6 +53,16 @@ export class App {
       this.currentIndex = this.files.indexOf(selected);
       const file = await selected.getFile();
       this.videoSrc = URL.createObjectURL(file);
+
+      this.repeatCount = 1;
+      if (this.currentIndex < this.files.length - 1) {
+        const currentNum = parseInt(this.selectedFile, 10);
+        const nextNum = parseInt(this.getFileName(this.files[this.currentIndex + 1]), 10);
+        const gap = nextNum - currentNum - 1;
+        if (gap > 0) {
+          this.repeatCount = gap + 1;
+        }
+      }
     }
   }
 
@@ -55,6 +70,20 @@ export class App {
     if (this.isPlaying) {
       this.play();
     }
+  }
+
+  autoNext() {
+    if (this.repeatCount > 0) {
+      this.repeatCount--;
+      if (this.repeatCount === 0) {
+        this.next();
+      } else {
+        this.videoRef.nativeElement.currentTime = 0;
+        this.videoRef.nativeElement.play();
+      }
+      return;
+    }
+    this.next();
   }
 
   async previous() {

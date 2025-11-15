@@ -8,8 +8,7 @@
 #file-block {
   display: flex;
   flex-direction: column;
-  align-items: center;
-
+  justify-content: flex-start;
   #file-list {
     margin-top: 10px;
     width: 20rem;
