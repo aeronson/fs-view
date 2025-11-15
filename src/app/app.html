@@ -11,8 +11,9 @@
   <div id="video-block" *ngIf="selectedFile">
     <div class="video-container">
       <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()"
-        (loadeddata)="onLoadedData()"></video>
+        (loadeddata)="onLoadedData()" (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
+    <input type="range" [min]="0" [max]="videoDuration" [(ngModel)]="currentTime" (input)="seekVideo()" *ngIf="videoDuration > 0">
     <div class="video-controls">
       <button (click)="play()">Play</button>
       <button (click)="pause()">Pause</button>
@@ -24,5 +25,4 @@
       <canvas #chartRef *ngIf="funscriptData" width="800" height="200"></canvas>
     </div>
   </div>
-
 </div>
