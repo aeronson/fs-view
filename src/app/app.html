@@ -1,8 +1,8 @@
-<div id="main">
-  <div id="file-block">
+<div class="main">
+  <div class="file-block">
     <button (click)="selectFolder()">Select Folder</button>
     <input type="text" [(ngModel)]="selectedFolder" readonly>
-    <div id="file-list">
+    <div class="file-list">
       <select [size]="files.length" [(ngModel)]="selectedIndex" *ngIf="files.length" (change)="loadVideo()">
         <option *ngFor="let f of files; let i = index" [value]="i">{{getFileName(f)}}</option>
       </select>
@@ -20,8 +20,9 @@
       <button (click)="restart()">Restart</button>
       <button (click)="previous()">Previous</button>
       <button (click)="next()">Next</button>
+      <button (click)="toggleFullscreen()">Fullscreen</button>
     </div>
-    <div id="chart-block">
+    <div class="chart-block">
       <canvas #chartRef *ngIf="funscriptData" width="600" height="200"></canvas>
     </div>
   </div>

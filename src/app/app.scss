@@ -1,11 +1,11 @@
-#main {
+.main {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 20px;
 }
-
-#file-block {
+  
+.file-block {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,7 +59,7 @@
     }
   }
 
-  #chart-block {
+  .chart-block {
     width: 600px;
   }
 
