@@ -19,7 +19,7 @@ export class App {
   selectedFolder: string = '';
   selectedFile = '';
   videoSrc = '';
-  currentIndex = -1;
+  selectedIndex = -1;
   isPlaying = false;
   funscriptData: any = null;
   dirHandle?: FileSystemDirectoryHandle;
@@ -75,6 +75,7 @@ export class App {
         }
 
         if (this.files.length > 0) {
+          this.selectedIndex = 0;
           this.selectedFile = this.getFileName(this.files[0]);
           await this.loadVideo();
         }
@@ -92,69 +93,67 @@ export class App {
     if (this.chart) this.chart.destroy();
     this.videoDuration = 0;
     this.currentTime = 0;
-    if (!this.selectedFile) return;
-    const selected = this.files.find(f => this.getFileName(f) === this.selectedFile);
-    if (selected) {
-      this.currentIndex = this.files.indexOf(selected);
-      const file = await selected.getFile();
-      this.videoSrc = URL.createObjectURL(file);
+    if (this.selectedIndex < 0) return;
+    const selected = this.files[this.selectedIndex];
+    this.selectedFile = this.getFileName(selected);
+    const file = await selected.getFile();
+    this.videoSrc = URL.createObjectURL(file);
 
-      if (this.dirHandle) {
-        try {
-          const funHandle = await this.dirHandle.getFileHandle(`${this.selectedFile}.funscript`);
-          const funFile = await funHandle.getFile();
-          const text = await funFile.text();
-          this.funscriptData = JSON.parse(text);
-          this.cdr.detectChanges();
-          setTimeout(() => {
-            if (this.funscriptData && this.chartRef) {
-              const actions = this.funscriptData.actions.sort((a: any, b: any) => a.at - b.at);
-              const dataPoints = actions.map((a: any) => ({ x: a.at / 1000, y: a.pos }));
-              this.chart = new Chart(this.chartRef.nativeElement, {
-                type: 'line',
-                data: {
-                  datasets: [{
-                    data: dataPoints,
-                    label: 'Funscript',
-                    borderColor: 'blue',
-                    fill: false
-                  }]
-                },
-                options: {
-                  scales: {
-                    x: {
-                      type: 'linear',
-                      title: { display: true, text: 'Time (s)' }
-                    },
-                    y: {
-                      title: { display: true, text: 'Position' },
-                      min: 0,
-                      max: 100
-                    }
+    if (this.dirHandle) {
+      try {
+        const funHandle = await this.dirHandle.getFileHandle(`${this.selectedFile}.funscript`);
+        const funFile = await funHandle.getFile();
+        const text = await funFile.text();
+        this.funscriptData = JSON.parse(text);
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          if (this.funscriptData && this.chartRef) {
+            const actions = this.funscriptData.actions.sort((a: any, b: any) => a.at - b.at);
+            const dataPoints = actions.map((a: any) => ({ x: a.at / 1000, y: a.pos }));
+            this.chart = new Chart(this.chartRef.nativeElement, {
+              type: 'line',
+              data: {
+                datasets: [{
+                  data: dataPoints,
+                  label: 'Funscript',
+                  borderColor: 'blue',
+                  fill: false
+                }]
+              },
+              options: {
+                scales: {
+                  x: {
+                    type: 'linear',
+                    title: { display: true, text: 'Time (s)' }
                   },
-                  plugins: {
-                    annotation: {
-                      annotations: {
-                        progressLine: {
-                          type: 'line',
-                          scaleID: 'x',
-                          yScaleID: 'y',
-                          yMin: 0,
-                          yMax: 100,
-                          value: 0,
-                          borderColor: 'red',
-                          borderWidth: 2
-                        }
+                  y: {
+                    title: { display: true, text: 'Position' },
+                    min: 0,
+                    max: 100
+                  }
+                },
+                plugins: {
+                  annotation: {
+                    annotations: {
+                      progressLine: {
+                        type: 'line',
+                        scaleID: 'x',
+                        yScaleID: 'y',
+                        yMin: 0,
+                        yMax: 100,
+                        value: 0,
+                        borderColor: 'red',
+                        borderWidth: 2
                       }
                     }
                   }
                 }
-              });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Failed to load funscript:', e);
-        }
+              }
+            });
+          }
+        }, 0);
+      } catch (e) {
+        console.error('Failed to load funscript:', e);
       }
     }
   }
@@ -213,15 +212,15 @@ export class App {
   }
 
   async previous() {
-    if (this.currentIndex > 0) {
-      this.selectedFile = this.getFileName(this.files[this.currentIndex - 1]);
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
       await this.loadVideo();
     }
   }
 
   async next() {
-    if (this.currentIndex < this.files.length - 1) {
-      this.selectedFile = this.getFileName(this.files[this.currentIndex + 1]);
+    if (this.selectedIndex < this.files.length - 1) {
+      this.selectedIndex++;
       await this.loadVideo();
     }
   }

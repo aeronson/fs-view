@@ -3,8 +3,8 @@
     <button (click)="selectFolder()">Select Folder</button>
     <input type="text" [(ngModel)]="selectedFolder" readonly>
     <div id="file-list">
-      <select [size]="files.length" [(ngModel)]="selectedFile" *ngIf="files.length" (change)="loadVideo()">
-        <option *ngFor="let f of files" [value]="getFileName(f)">{{getFileName(f)}}</option>
+      <select [size]="files.length" [(ngModel)]="selectedIndex" *ngIf="files.length" (change)="loadVideo()">
+        <option *ngFor="let f of files; let i = index" [value]="i">{{getFileName(f)}}</option>
       </select>
     </div>
   </div>
