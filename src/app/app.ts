@@ -21,7 +21,6 @@ export class App {
   videoSrc = '';
   currentIndex = -1;
   isPlaying = false;
-  repeatCount = 0;
   funscriptData: any = null;
   dirHandle?: FileSystemDirectoryHandle;
   chart?: Chart;
@@ -85,16 +84,6 @@ export class App {
       this.currentIndex = this.files.indexOf(selected);
       const file = await selected.getFile();
       this.videoSrc = URL.createObjectURL(file);
-
-      this.repeatCount = 1;
-      if (this.currentIndex < this.files.length - 1) {
-        const currentNum = parseInt(this.selectedFile, 10);
-        const nextNum = parseInt(this.getFileName(this.files[this.currentIndex + 1]), 10);
-        const gap = nextNum - currentNum - 1;
-        if (gap > 0) {
-          this.repeatCount = gap + 1;
-        }
-      }
 
       if (this.dirHandle) {
         try {
@@ -206,18 +195,6 @@ export class App {
   }
 
   autoNext() {
-    if (this.repeatCount > 0) {
-      this.repeatCount--;
-      if (this.repeatCount === 0) {
-        this.next();
-      } else {
-        this.videoRef.nativeElement.currentTime = 0;
-        this.currentTime = 0;
-        this.updateProgressLine(0);
-        this.videoRef.nativeElement.play();
-      }
-      return;
-    }
     this.next();
   }
 
