@@ -8,7 +8,7 @@
       </select>
     </div>
   </div>
-  <div id="video-block" *ngIf="selectedFile">
+  <div class="video-block" *ngIf="selectedFile">
     <div class="video-container">
       <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()"
         (loadeddata)="onLoadedData()" (loadedmetadata)="onLoadedMetadata()"></video>
