@@ -52,14 +52,28 @@ export class App {
       this.dirHandle = await (window as any).showDirectoryPicker();
       if (this.dirHandle) {
         this.selectedFolder = this.dirHandle.name;
-        this.files = [];
+        let tempFiles: any[] = [];
 
         for await (const entry of this.dirHandle.values()) {
           if (entry.kind === 'file' && /^\d{4}\.mp4$/i.test(entry.name)) {
-            this.files.push(entry);
+            tempFiles.push(entry);
           }
         }
-        this.files.sort((a, b) => this.getFileName(a).localeCompare(this.getFileName(b)));
+        tempFiles.sort((a, b) => this.getFileName(a).localeCompare(this.getFileName(b)));
+
+        this.files = [];
+        for (let i = 0; i < tempFiles.length; i++) {
+          this.files.push(tempFiles[i]);
+          if (i < tempFiles.length - 1) {
+            const currentNum = parseInt(this.getFileName(tempFiles[i]), 10);
+            const nextNum = parseInt(this.getFileName(tempFiles[i + 1]), 10);
+            const gap = nextNum - currentNum - 1;
+            for (let j = 0; j < gap; j++) {
+              this.files.push(tempFiles[i]);
+            }
+          }
+        }
+
         if (this.files.length > 0) {
           this.selectedFile = this.getFileName(this.files[0]);
           await this.loadVideo();
