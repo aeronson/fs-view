@@ -95,8 +95,6 @@ export class App {
   }
 
   async loadVideo() {
-    if (this.videoSrc) URL.revokeObjectURL(this.videoSrc);
-    this.videoSrc = '';
     this.funscriptData = null;
     if (this.chart) this.chart.destroy();
     this.videoDuration = 0;
@@ -128,6 +126,7 @@ export class App {
       }
     }
 
+    if (this.videoSrc) URL.revokeObjectURL(this.videoSrc);
     this.videoSrc = URL.createObjectURL(videoFile);
     this.funscriptData = funscriptData;
 
