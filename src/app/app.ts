@@ -47,6 +47,13 @@ export class App {
     }
   }
 
+  @HostListener('document:keydown', ['$event'])
+  handleEscape(event: KeyboardEvent) {
+    if (event.key === 'Escape' && document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  }
+
   async selectFolder() {
     try {
       this.dirHandle = await (window as any).showDirectoryPicker();
@@ -252,15 +259,15 @@ export class App {
   }
 
   toggleFullscreen() {
-  const elem = document.getElementById('video-block');
-  if (elem) {
-    if (!document.fullscreenElement) {
-      elem.requestFullscreen();
-    } else {
-      document.exitFullscreen();
+    const elem = document.querySelector('.video-block');
+    if (elem) {
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
     }
   }
-}
 
   getFileName(entry: any) {
     return entry?.name?.replace(/\.mp4$/i, '') ?? '';
