@@ -421,7 +421,7 @@ export class App {
   }
 
   toggleFullscreen() {
-    const elem = document.querySelector('.video-block');
+    const elem = this.videoRef?.nativeElement;
     if (elem) {
       if (!document.fullscreenElement) {
         elem.requestFullscreen();
