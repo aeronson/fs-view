@@ -27,12 +27,41 @@ export class App {
   currentTime: number = 0;
   private animationFrameId: number | null = null;
   private nextVideoCache?: { file: File; funscriptData: any };
+  // Map of preloaded object URLs by file index
+  preloadedUrls: Map<number, string> = new Map();
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('chartRef') chartRef!: ElementRef<HTMLCanvasElement>;
 
   constructor(private cdr: ChangeDetectorRef) {
     Chart.register(annotationPlugin);
+  }
+
+  // Preload object URLs for all files (non-blocking, runs in background)
+  async preloadAllVideos() {
+    if (!this.dirHandle || !this.files || this.files.length === 0) return;
+    // Don't double-preload
+    if (this.preloadedUrls.size > 0) return;
+
+    const promises: Promise<void>[] = [];
+    for (let i = 0; i < this.files.length; i++) {
+      const entry = this.files[i];
+      const p = (async () => {
+        try {
+          const file = await entry.getFile();
+          const url = URL.createObjectURL(file);
+          this.preloadedUrls.set(i, url);
+          // Minor debug hint
+          try { this.cdr.detectChanges(); } catch {}
+        } catch (e) {
+          console.error('Failed to preload file index', i, e);
+        }
+      })();
+      promises.push(p);
+    }
+
+    await Promise.all(promises);
+    console.log('Preloaded', this.preloadedUrls.size, 'videos');
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -85,6 +114,8 @@ export class App {
           this.selectedIndex = 0;
           this.selectedFile = this.getFileName(this.files[0]);
           await this.loadVideo();
+          // Start preloading all videos in the background
+          this.preloadAllVideos().catch(err => console.error('Preload all error:', err));
         }
       }
 
@@ -103,7 +134,7 @@ export class App {
     this.selectedFile = this.getFileName(selected);
 
     // Use cached next video if available, otherwise fetch fresh
-    let videoFile: File;
+    let videoFile: File | undefined;
     let funscriptData: any = null;
 
     if (this.nextVideoCache) {
@@ -125,8 +156,18 @@ export class App {
       }
     }
 
-    if (this.videoSrc) URL.revokeObjectURL(this.videoSrc);
-    this.videoSrc = URL.createObjectURL(videoFile);
+    // Prefer a preloaded URL if available
+    const preloaded = this.preloadedUrls.get(this.selectedIndex);
+    if (this.videoSrc && !this.preloadedUrls.has(this.selectedIndex)) {
+      // Only revoke the old object URL if it's not one of the preloaded persistent URLs
+      try { URL.revokeObjectURL(this.videoSrc); } catch {}
+    }
+
+    if (preloaded) {
+      this.videoSrc = preloaded;
+    } else if (videoFile) {
+      this.videoSrc = URL.createObjectURL(videoFile);
+    }
     this.funscriptData = funscriptData;
 
     if (this.funscriptData) {
@@ -264,6 +305,17 @@ export class App {
         file: nextFile,
         funscriptData: nextFunscriptData
       };
+
+      // If we preloaded all videos, prefer using preloaded URL for the inactive element
+      const preloaded = this.preloadedUrls.get(nextIndex);
+      try {
+        if (preloaded) {
+          // Do not overwrite the active src — we only want to ensure the next file is available in the preloaded map
+          console.log('Next video preloaded (url available)');
+        }
+      } catch (e) {
+        // ignore
+      }
     } catch (e) {
       console.error('Failed to preload next video:', e);
       this.nextVideoCache = undefined;
@@ -343,5 +395,17 @@ export class App {
 
   getFileName(entry: any) {
     return entry?.name?.replace(/\.mp4$/i, '') ?? '';
+  }
+
+  // Cleanup preloaded object URLs when component is destroyed
+  ngOnDestroy() {
+    try {
+      if (this.videoSrc && !Array.from(this.preloadedUrls.values()).includes(this.videoSrc)) {
+        URL.revokeObjectURL(this.videoSrc);
+      }
+    } catch (e) {}
+    for (const url of this.preloadedUrls.values()) {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }
   }
 }
