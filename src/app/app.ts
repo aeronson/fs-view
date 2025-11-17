@@ -25,6 +25,8 @@ export class App {
   chart?: Chart;
   videoDuration: number = 0;
   currentTime: number = 0;
+  // Background image data URL captured from first video's first frame
+  backgroundDataUrl: string | null = null;
   private animationFrameId: number | null = null;
   private nextVideoCache?: { file: File; funscriptData: any };
   // Map of preloaded object URLs by file index
@@ -330,11 +332,47 @@ export class App {
   }
 
   onLoadedData() {
+    if (!this.backgroundDataUrl && this.selectedIndex === 0) {
+      // Capture the first visible frame of the first video to use as a background behind the player
+      this.captureFirstFrame().catch(e => console.error('captureFirstFrame failed', e));
+    }
+
     if (this.isPlaying) {
       this.play();
     } else {
       this.currentTime = 0;
       this.updateProgressLine(0);
+    }
+  }
+
+  private async captureFirstFrame() {
+    try {
+      const video = this.videoRef?.nativeElement;
+      if (!video) return;
+      // Ensure there's at least one frame
+      if (video.readyState < 2) {
+        await new Promise<void>(resolve => {
+          const onCan = () => {
+            video.removeEventListener('canplay', onCan);
+            resolve();
+          };
+          video.addEventListener('canplay', onCan);
+          setTimeout(() => { video.removeEventListener('canplay', onCan); resolve(); }, 2000);
+        });
+      }
+
+      const w = video.videoWidth || video.clientWidth || 600;
+      const h = video.videoHeight || video.clientHeight || 400;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, w, h);
+      this.backgroundDataUrl = canvas.toDataURL('image/png');
+      this.cdr.detectChanges();
+    } catch (e) {
+      console.error('Error capturing frame:', e);
     }
   }
 

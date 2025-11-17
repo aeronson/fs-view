@@ -31,13 +31,31 @@
     width: 600px;
     height: 600px;
     background: black;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .video-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 1;
   }
 
   video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    z-index: 2;
   }
 
   input[type="range"] {

@@ -12,6 +12,7 @@
   </div>
   <div class="video-block" *ngIf="selectedFile">
     <div class="video-container">
+      <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div>
       <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()" (loadeddata)="onLoadedData()"
         (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
