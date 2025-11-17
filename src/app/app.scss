@@ -10,6 +10,11 @@
   flex-direction: column;
   align-items: center;
 
+  .file-input-block {
+    display: flex;
+    flex-direction: row;
+  }
+
   #file-list {
     margin-top: 10px;
     width: 20rem;
@@ -20,6 +25,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 96vh;
 
   .video-container {
     width: 600px;
