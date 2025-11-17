@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet],
+  imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
@@ -133,51 +132,8 @@ export class App {
     if (this.funscriptData) {
       this.cdr.detectChanges();
       setTimeout(() => {
-        if (this.funscriptData && this.chartRef) {
-          const actions = this.funscriptData.actions.sort((a: any, b: any) => a.at - b.at);
-          const dataPoints = actions.map((a: any) => ({ x: a.at / 1000, y: a.pos }));
-          this.chart = new Chart(this.chartRef.nativeElement, {
-            type: 'line',
-            data: {
-              datasets: [{
-                data: dataPoints,
-                label: 'Funscript',
-                borderColor: 'blue',
-                fill: false
-              }]
-            },
-            options: {
-              scales: {
-                x: {
-                  type: 'linear',
-                  title: { display: true, text: 'Time (s)' }
-                },
-                y: {
-                  title: { display: true, text: 'Position' },
-                  min: 0,
-                  max: 100
-                }
-              },
-              plugins: {
-                annotation: {
-                  annotations: {
-                    progressLine: {
-                      type: 'line',
-                      scaleID: 'x',
-                      yScaleID: 'y',
-                      yMin: 0,
-                      yMax: 100,
-                      value: 0,
-                      borderColor: 'red',
-                      borderWidth: 2
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-      }, 0);
+        this.createChart();
+      }, 50);
     }
   }
 
@@ -188,11 +144,77 @@ export class App {
 
   updateProgressLine(time: number) {
     if (this.chart) {
-      const plugins = this.chart.options.plugins as any;
-      if (plugins && plugins.annotation && plugins.annotation.annotations) {
-        plugins.annotation.annotations.progressLine.value = time;
+      try {
+        const options = this.chart.options as any;
+        if (options?.plugins?.annotation?.annotations?.progressLine) {
+          options.plugins.annotation.annotations.progressLine.value = time;
+          this.chart.update('none');
+        }
+      } catch (e) {
+        console.error('Error updating progress line:', e);
       }
-      this.chart.update('none');
+    }
+  }
+
+  private createChart() {
+    if (!this.funscriptData || !this.chartRef?.nativeElement) {
+      return;
+    }
+
+    try {
+      const actions = this.funscriptData.actions.sort((a: any, b: any) => a.at - b.at);
+      const dataPoints = actions.map((a: any) => ({ x: a.at / 1000, y: a.pos }));
+      
+      // Calculate max time for x-axis
+      const maxTime = dataPoints.length > 0 ? Math.max(...dataPoints.map((p: any) => p.x)) : 100;
+      
+      this.chart = new Chart(this.chartRef.nativeElement, {
+        type: 'line',
+        data: {
+          datasets: [{
+            data: dataPoints,
+            label: 'Funscript',
+            borderColor: 'blue',
+            fill: false
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              display: false,
+              min: 0,
+              max: maxTime
+            },
+            y: {
+              display: false,
+              min: 0,
+              max: 100
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            annotation: {
+              annotations: {
+                progressLine: {
+                  type: 'line',
+                  scaleID: 'x',
+                  yScaleID: 'y',
+                  yMin: 0,
+                  yMax: 100,
+                  value: 0,
+                  borderColor: 'red',
+                  borderWidth: 2
+                }
+              }
+            }
+          }
+        } as any
+      });
+    } catch (error) {
+      console.error('Failed to create chart:', error);
     }
   }
 
@@ -201,6 +223,7 @@ export class App {
       if (this.isPlaying && this.videoRef) {
         this.currentTime = this.videoRef.nativeElement.currentTime;
         this.updateProgressLine(this.currentTime);
+        this.cdr.markForCheck();
         this.animationFrameId = requestAnimationFrame(animate);
       }
     };
