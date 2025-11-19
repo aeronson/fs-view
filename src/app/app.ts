@@ -93,18 +93,18 @@ export class App {
         let tempFiles: any[] = [];
 
         for await (const entry of this.dirHandle.values()) {
-          if (entry.kind === 'file' && /^\d{4}\.mp4$/i.test(entry.name)) {
+          if (entry.kind === 'file' && /^\d{4}-*.*\.mp4$/i.test(entry.name)) {
             tempFiles.push(entry);
           }
         }
-        tempFiles.sort((a, b) => this.getFileName(a).localeCompare(this.getFileName(b)));
+        tempFiles.sort((a, b) => this.getFileNumber(a) - this.getFileNumber(b));
 
         this.files = [];
         for (let i = 0; i < tempFiles.length; i++) {
           this.files.push(tempFiles[i]);
           if (i < tempFiles.length - 1) {
-            const currentNum = parseInt(this.getFileName(tempFiles[i]), 10);
-            const nextNum = parseInt(this.getFileName(tempFiles[i + 1]), 10);
+            const currentNum = this.getFileNumber(tempFiles[i]);
+            const nextNum = this.getFileNumber(tempFiles[i + 1]);
             const gap = nextNum - currentNum - 1;
             for (let j = 0; j < gap; j++) {
               this.files.push(tempFiles[i]);
@@ -433,6 +433,11 @@ export class App {
 
   getFileName(entry: any) {
     return entry?.name?.replace(/\.mp4$/i, '') ?? '';
+  }
+
+  private getFileNumber(entry: any) {
+    const match = entry?.name?.match(/^(\d{4})/);
+    return match ? parseInt(match[1], 10) : 0;
   }
 
   // Cleanup preloaded object URLs when component is destroyed
