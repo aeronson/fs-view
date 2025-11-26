@@ -1,23 +1,251 @@
+/*
+  app.scss - Reorganized styles for fs-view
+  Sections:
+  1. CSS variables / configuration
+  2. Global layout (.main)
+  3. Left file panel (.file-block)
+  4. Video panel (.video-block)
+  5. Controls and shared UI elements
+  6. Fullscreen overrides
+  7. Responsive tweaks
+*/
+
+:root {
+  --left-pane-min-width: 20rem;
+  --gutter: 1rem;
+  --video-size: 600px;
+  --top-margin: 20px;
+  --primary: #007bff;
+  --primary-hover: #0056b3;
+  --bg: #000;
+}
+
+/* -------------------------------
+   Global layout
+   ------------------------------- */
+.main {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch; /* stretch children vertically */
+  margin-top: var(--top-margin);
+  height: calc(100% - var(--top-margin));
+  gap: var(--gutter);
+  box-sizing: border-box;
+  min-height: 0; /* allow flex children to shrink */
+}
+
+/* -------------------------------
+   Left column: file block
+   ------------------------------- */
+.file-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* flush left */
+  height: 99%;
+  min-width: var(--left-pane-min-width);
+  padding: 0.25rem 0;
+  margin-left: 0; /* ensure flush left */
+  min-height: 0; /* allow children to shrink inside flex container */
+}
+
+.file-input-block {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  min-width: var(--left-pane-min-width);
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.file-input-block button {
+  flex: 0 0 auto;
+}
+
+.file-input-block input[type="text"] {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+}
+
+.file-list {
+  margin-top: 10px;
+  width: 100%;
+  flex: 1 1 auto; /* expand to fill vertical area */
+  display: flex;
+  flex-direction: column;
+  overflow: auto; /* scroll when too many files */
+  padding: 0 0.25rem;
+  min-height: 0; /* allow select to shrink within container */
+}
+
+.file-list select {
+  width: 100%;
+  height: 100%;
+  min-height: 10rem;
+}
+
+/* -------------------------------
+   Right column: video block
+   ------------------------------- */
+.video-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%; /* use full height of parent flex container */
+  min-height: 0; /* allow children to shrink */
+}
+
+.video-block .video-container {
+  width: var(--video-size);
+  height: var(--video-size);
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  z-index: 1;
+}
+
+.video-block video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* preserve aspect ratio */
+  display: block;
+  z-index: 2;
+}
+
+.video-block input[type="range"] {
+  width: var(--video-size);
+  margin: 10px 0;
+}
+
+.video-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.video-controls button {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.video-controls button:hover {
+  background: var(--primary-hover);
+}
+
+.chart-block {
+  width: var(--video-size);
+  margin-top: 8px;
+}
+
+/* Hide the native controls in Webkit-based browsers when using our own controls */
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+/* -------------------------------
+   Fullscreen overrides
+   ------------------------------- */
+.video-block:fullscreen .video-container video,
+.video-block:-webkit-full-screen .video-container video {
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+}
+
+.video-block:fullscreen .video-container,
+.video-block:-webkit-full-screen .video-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* -------------------------------
+   Responsive tweaks
+   ------------------------------- */
+@media (max-width: 900px) {
+  :root {
+    --video-size: 320px;
+  }
+  .main {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    margin-top: 10px;
+  }
+  .file-block {
+    min-width: 0;
+    width: 100%;
+    order: 2; /* place file-block after player on small screens */
+  }
+  .video-block {
+    order: 1;
+    align-items: center;
+  }
+}
+
+/* End of file */
 .main {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   margin-top: 20px;
+  height: calc(100vh - 20px);
 }
 
 .file-block {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  /* Make the file-block full height and stick to the left */
+  height: 100%;
+  min-width: 20rem;
+  margin-right: 1rem;
 
   .file-input-block {
     display: flex;
     flex-direction: row;
+    width: 100%;
+    min-width: 20rem;
+    gap: 8px;
   }
 
-  #file-list {
+  .file-input-block input[type="text"] {
+    flex: 1 1 auto;
+  }
+
+  .file-list {
     margin-top: 10px;
-    width: 20rem;
+    width: 100%;
+    /* Allow the file list to expand to fill available height and scroll */
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .file-list select {
+    width: 100%;
+    height: 100%;
+    min-height: 10rem;
   }
 }
 

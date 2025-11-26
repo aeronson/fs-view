@@ -39,6 +39,22 @@ export class App {
     Chart.register(annotationPlugin);
   }
 
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscape(event: Event) {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  }
+
+  private isEditableTarget(target: EventTarget | null): boolean {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    const tag = target.tagName?.toLowerCase?.();
+    if (!tag) return false;
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+    if ((target as HTMLElement).isContentEditable) return true;
+    return false;
+  }
+
   // Preload object URLs for all files (non-blocking, runs in background)
   async preloadAllVideos() {
     if (!this.dirHandle || !this.files || this.files.length === 0) return;
@@ -68,20 +84,23 @@ export class App {
 
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (event.key === ' ') {
-      event.preventDefault();
-      if (this.isPlaying) {
-        this.pause();
-      } else {
-        this.play();
-      }
-    }
-  }
+    // Only toggle play/pause on Space, and only when the focused element
+    // is not an editable control (input, textarea, select, or contenteditable).
+    const isSpace = event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space';
+    if (!isSpace) return;
 
-  @HostListener('document:keydown', ['$event'])
-  handleEscape(event: KeyboardEvent) {
-    if (event.key === 'Escape' && document.fullscreenElement) {
-      document.exitFullscreen();
+    if (this.isEditableTarget(event.target)) {
+      // Let the control handle the space key (typing, sliders, etc.)
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.isPlaying) {
+      this.pause();
+    } else {
+      this.play();
     }
   }
 
