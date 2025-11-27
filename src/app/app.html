@@ -12,22 +12,24 @@
   </div>
   <div class="video-block" *ngIf="selectedFile">
     <div class="video-container">
-      <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div>
+      <!-- <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div> -->
       <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()" (loadeddata)="onLoadedData()"
         (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
-    <input type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()"
-      *ngIf="videoDuration > 0">
-    <div class="video-controls">
-      <button (click)="play()">Play</button>
-      <button (click)="pause()">Pause</button>
-      <button (click)="restart()">Restart</button>
-      <button (click)="previous()">Previous</button>
-      <button (click)="next()">Next</button>
-      <button (click)="toggleFullscreen()">Fullscreen</button>
-    </div>
-    <div class="chart-block">
-      <canvas #chartRef *ngIf="funscriptData" width="600" height="200"></canvas>
+    <div class="video-controls-block">
+      <input type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()"
+        *ngIf="videoDuration > 0">
+      <div class="video-controls">
+        <button (click)="play()">Play</button>
+        <button (click)="pause()">Pause</button>
+        <button (click)="restart()">Restart</button>
+        <button (click)="previous()">Previous</button>
+        <button (click)="next()">Next</button>
+        <button (click)="toggleFullscreen()">Fullscreen</button>
+      </div>
+      <div class="chart-block">
+        <canvas #chartRef *ngIf="funscriptData" width="600" height="200"></canvas>
+      </div>
     </div>
   </div>
 </div>

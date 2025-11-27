@@ -201,6 +201,15 @@ export class App {
 
   onLoadedMetadata() {
     this.videoDuration = this.videoRef.nativeElement.duration;
+    try {
+      const v = this.videoRef.nativeElement;
+      const container = v.parentElement as HTMLElement | null;
+      if (container && v.videoWidth && v.videoHeight) {
+        container.style.setProperty('--video-aspect', `${v.videoWidth}/${v.videoHeight}`);
+      }
+    } catch (e) {
+      console.warn('Failed to set video aspect CSS variable', e);
+    }
     this.cdr.detectChanges();
   }
 

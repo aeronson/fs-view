@@ -14,6 +14,10 @@
   --left-pane-min-width: 20rem;
   --gutter: 1rem;
   --video-size: 600px;
+  --video-aspect: 16/9;
+  --controls-height: 48px;
+  --chart-height: 200px;
+  --range-height: 28px;
   --top-margin: 20px;
   --primary: #007bff;
   --primary-hover: #0056b3;
@@ -28,15 +32,17 @@
   flex-direction: row;
   align-items: stretch; /* stretch children vertically */
   margin-top: var(--top-margin);
-  height: calc(100% - var(--top-margin));
+  height: calc(100vh - var(--top-margin));
   gap: var(--gutter);
   box-sizing: border-box;
   min-height: 0; /* allow flex children to shrink */
+  justify-content: flex-start; /* left column stays flush left */
 }
 
 /* -------------------------------
    Left column: file block
    ------------------------------- */
+/* Left column */
 .file-block {
   display: flex;
   flex-direction: column;
@@ -90,16 +96,30 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start; /* we'll rely on sibling flex sizes to place elements */
+  flex: 1 1 auto; /* take remaining horizontal space */
   height: 100%; /* use full height of parent flex container */
   min-height: 0; /* allow children to shrink */
 }
 
 .video-block .video-container {
-  width: var(--video-size);
-  height: var(--video-size);
+  /* Fill the available horizontal space inside the video-block, then
+     constrain by available height to preserve aspect ratio. */
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto; /* keep centered */
+  flex: 1 1 auto; /* grow to fill remaining space */
+  min-height: clamp(180px, 40vh, var(--video-size));
+  aspect-ratio: var(--video-aspect);
+    /* No explicit max-height — flexbox will calculate the available space
+      after siblings (range, controls, chart) consume their fixed heights. */
   background: var(--bg);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 90vh;
 }
 
 .video-bg {
@@ -115,26 +135,37 @@
 }
 
 .video-block video {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain; /* preserve aspect ratio */
   display: block;
   z-index: 2;
 }
 
 .video-block input[type="range"] {
-  width: var(--video-size);
+  width: 100%;
   margin: 10px 0;
+  height: var(--range-height);
+  flex: 0 0 var(--range-height);
 }
 
 .video-controls {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 0; /* remove top spacing so controls sit flush at bottom when justified */
   justify-content: center;
+  height: var(--controls-height);
+  align-items: center;
+  width: 100%;
+  /* keep the controls pinned to the bottom; if the container scrolls they will stick inside it */
+  position: static; /* keep in normal flow so it reserves layout space */
+  flex: 0 0 var(--controls-height);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 10;
 }
 
 .video-controls button {
@@ -151,8 +182,17 @@
 }
 
 .chart-block {
-  width: var(--video-size);
+  width: 100%;
   margin-top: 8px;
+  height: var(--chart-height);
+  min-height: var(--chart-height);
+  flex: 0 0 var(--chart-height);
+}
+
+.chart-block canvas {
+  width: 100% !important;
+  height: var(--chart-height) !important;
+  max-height: var(--chart-height);
 }
 
 /* Hide the native controls in Webkit-based browsers when using our own controls */
@@ -203,136 +243,3 @@ video::-webkit-media-controls-panel {
 }
 
 /* End of file */
-.main {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  margin-top: 20px;
-  height: calc(100vh - 20px);
-}
-
-.file-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  /* Make the file-block full height and stick to the left */
-  height: 100%;
-  min-width: 20rem;
-  margin-right: 1rem;
-
-  .file-input-block {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    min-width: 20rem;
-    gap: 8px;
-  }
-
-  .file-input-block input[type="text"] {
-    flex: 1 1 auto;
-  }
-
-  .file-list {
-    margin-top: 10px;
-    width: 100%;
-    /* Allow the file list to expand to fill available height and scroll */
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-  }
-
-  .file-list select {
-    width: 100%;
-    height: 100%;
-    min-height: 10rem;
-  }
-}
-
-.video-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 96vh;
-
-  .video-container {
-    width: 600px;
-    height: 600px;
-    background: black;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .video-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    z-index: 1;
-  }
-
-  video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Use contain so the video fits inside the container without being zoomed/cropped */
-    object-fit: contain;
-    display: block;
-    z-index: 2;
-  }
-
-  input[type="range"] {
-    width: 600px;
-    margin: 10px 0;
-  }
-
-  .video-controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    justify-content: center;
-
-    button {
-      padding: 8px 16px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-
-      &:hover {
-        background: #0056b3;
-      }
-    }
-  }
-
-  .chart-block {
-    width: 600px;
-  }
-
-  video::-webkit-media-controls,
-  video::-webkit-media-controls-enclosure,
-  video::-webkit-media-controls-panel {
-    display: none !important;
-  }
-}
-
-.video-block:fullscreen .video-container video,
-.video-block:-webkit-full-screen .video-container video {
-  /* Keep contain in fullscreen so the video isn't overstretched */
-  object-fit: contain;
-  width: 100%;
-  height: 100%;
-}
-
-.video-block:fullscreen .video-container,
-.video-block:-webkit-full-screen .video-container {
-  width: 100%;
-  height: 100%;
-}
