@@ -191,12 +191,16 @@ export class App {
     }
     this.funscriptData = funscriptData;
 
-    if (this.funscriptData) {
-      this.cdr.detectChanges();
-      setTimeout(() => {
+    // Always re-create the chart so the canvas is visible even without funscript data
+    this.cdr.detectChanges();
+    // Use an animation frame to ensure the canvas is painted and sized.
+    requestAnimationFrame(() => {
+      try {
         this.createChart();
-      }, 50);
-    }
+      } catch (e) {
+        console.error('Error creating chart on raf:', e);
+      }
+    });
   }
 
   onLoadedMetadata() {
@@ -228,18 +232,26 @@ export class App {
   }
 
   private createChart() {
-    if (!this.funscriptData || !this.chartRef?.nativeElement) {
+    if (!this.chartRef?.nativeElement) {
       return;
     }
 
     try {
-      const actions = this.funscriptData.actions.sort((a: any, b: any) => a.at - b.at);
-      const dataPoints = actions.map((a: any) => ({ x: a.at / 1000, y: a.pos }));
-      
+      // Build dataPoints (empty if no funscript data)
+      const actions = this.funscriptData?.actions?.sort((a: any, b: any) => a.at - b.at) || [];
+      const dataPoints = actions.length > 0 ? actions.map((a: any) => ({ x: a.at / 1000, y: a.pos })) : [];
       // Calculate max time for x-axis
       const maxTime = dataPoints.length > 0 ? Math.max(...dataPoints.map((p: any) => p.x)) : 100;
       
-      this.chart = new Chart(this.chartRef.nativeElement, {
+      // Ensure the canvas element is visible for Chart.js sizing
+      const canvas = this.chartRef.nativeElement as HTMLCanvasElement;
+      if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
+        // Defer if the canvas hasn't been sized yet
+        requestAnimationFrame(() => this.createChart());
+        return;
+      }
+
+      this.chart = new Chart(canvas, {
         type: 'line',
         data: {
           datasets: [{
@@ -284,6 +296,12 @@ export class App {
           }
         } as any
       });
+      try {
+        // Give Chart.js a tick to compute layout, then ensure it's sized correctly
+        requestAnimationFrame(() => {
+          try { this.chart?.resize(); this.chart?.update('none'); } catch (e) { /* ignore */ }
+        });
+      } catch (e) {}
     } catch (error) {
       console.error('Failed to create chart:', error);
     }

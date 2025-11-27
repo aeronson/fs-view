@@ -93,22 +93,27 @@
    Right column: video block
    ------------------------------- */
 .video-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start; /* we'll rely on sibling flex sizes to place elements */
+  /* Use grid for predictable rows: video expands (1fr), then range, controls, and chart have fixed rows */
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto var(--controls-height) var(--chart-height);
+  align-items: stretch;
+  justify-items: center;
+  gap: 0.5rem;
   flex: 1 1 auto; /* take remaining horizontal space */
   height: 100%; /* use full height of parent flex container */
   min-height: 0; /* allow children to shrink */
 }
 
+/* Place the video container into the first grid row */
 .video-block .video-container {
   /* Fill the available horizontal space inside the video-block, then
      constrain by available height to preserve aspect ratio. */
   width: 100%;
   max-width: 100%;
   margin: 0 auto; /* keep centered */
-  flex: 1 1 auto; /* grow to fill remaining space */
+  /* it will fill row 1 via grid (1fr), set sizing via max constraints */
+  flex: unset;
   min-height: clamp(180px, 40vh, var(--video-size));
   aspect-ratio: var(--video-aspect);
     /* No explicit max-height — flexbox will calculate the available space
@@ -145,13 +150,16 @@
   z-index: 2;
 }
 
+/* Range sits in row 2 */
 .video-block input[type="range"] {
   width: 100%;
   margin: 10px 0;
   height: var(--range-height);
-  flex: 0 0 var(--range-height);
+  grid-row: 2/3;
+  flex: unset;
 }
 
+/* Controls pinned to the bottom row (row 3) inside the video-block */
 .video-controls {
   display: flex;
   gap: 10px;
@@ -161,8 +169,9 @@
   align-items: center;
   width: 100%;
   /* keep the controls pinned to the bottom; if the container scrolls they will stick inside it */
-  position: static; /* keep in normal flow so it reserves layout space */
-  flex: 0 0 var(--controls-height);
+  grid-row: 3/4;
+  position: relative;
+  flex: unset;
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(2px);
   z-index: 10;
@@ -181,13 +190,58 @@
   background: var(--primary-hover);
 }
 
+/* Chart sits in the final grid row */
 .chart-block {
   width: 100%;
   margin-top: 8px;
   height: var(--chart-height);
   min-height: var(--chart-height);
-  flex: 0 0 var(--chart-height);
+  grid-row: 4/5;
+  flex: unset;
 }
+
+.chart-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+/* -------------------------------
+   Visual polish & helpers
+   ------------------------------- */
+.file-block {
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Styled scrollbar for the file list */
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
+.file-list::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+}
+
+/* video placeholder until content loaded */
+.video-container.loading {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+.video-container.loading::after {
+  content: "";
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.6);
+  animation: spin 1s linear infinite;
+  position: absolute;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .chart-block canvas {
   width: 100% !important;

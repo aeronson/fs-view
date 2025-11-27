@@ -28,7 +28,8 @@
         <button (click)="toggleFullscreen()">Fullscreen</button>
       </div>
       <div class="chart-block">
-        <canvas #chartRef *ngIf="funscriptData" width="600" height="200"></canvas>
+        <canvas #chartRef width="600" height="200"></canvas>
+        <div class="chart-placeholder" *ngIf="!funscriptData">No funscript data</div>
       </div>
     </div>
   </div>
