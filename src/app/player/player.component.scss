@@ -48,10 +48,16 @@
 
 .video-block {
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto var(--controls-height, 48px) var(--chart-height, 200px);
+  /* Two columns: controls (auto) and main (video/graph) */
+  grid-template-columns: auto 1fr;
+  /* Three rows: video, controls/slider row, chart row */
+  grid-template-rows: 1fr auto var(--chart-height, 100px);
+  grid-template-areas:
+    "video video"
+    "controls slider"
+    "controls chart";
   align-items: stretch;
-  justify-items: center;
+  justify-items: stretch;
   gap: 0.5rem;
   flex: 1 1 auto;
   height: 100%;
@@ -73,6 +79,12 @@
   justify-content: center;
   max-height: 90vh;
 }
+
+/* grid area assignments */
+.video-container { grid-area: video; }
+.video-controls { grid-area: controls; }
+.slider { grid-area: slider; align-self: center; justify-self: stretch; }
+.chart-block { grid-area: chart; }
 
 /* Ensure the video fits within the container and maintains aspect ratio */
 .video-container video {
@@ -104,13 +116,50 @@
   z-index: 10;
 }
 
+.fixture-badge {
+  margin-left: 0.5rem;
+  align-self: center;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.9rem;
+}
+
 .chart-block {
   width: 100%;
   margin-top: 8px;
-  height: var(--chart-height, 200px);
-  min-height: var(--chart-height, 200px);
-  grid-row: 4/5;
+  height: var(--chart-height, 100px);
+  min-height: var(--chart-height, 100px);
+  grid-row: 3/4;
   flex: unset;
+}
+
+/* Vertical layout: place video on left and controls/slider/chart stacked on right */
+.video-block.vertical {
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto auto;
+  grid-template-areas:
+    "video controls"
+    "video slider"
+    "video chart";
+}
+
+/* Keep controls centered in horizontal layout left column */
+.video-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+/* In vertical layout, align controls to top of the right column */
+.video-block.vertical .video-controls {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.slider {
+  width: 100%;
+  padding: 0.25rem 0;
 }
 
 .chart-placeholder {

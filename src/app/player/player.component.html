@@ -3,6 +3,11 @@
     <div class="file-input-block">
       <button mat-button (click)="selectFolder()">Select Folder</button>
       <input type="text" [(ngModel)]="selectedFolder" readonly>
+        <select aria-label="Chart fixtures" [(ngModel)]="selectedFixture" (change)="loadFixture(selectedFixture)">
+          <option value="">— fixtures —</option>
+          <option value="sine-0-10-10s.json">Sine 0-10 (10s)</option>
+          <option value="sine-0-100-10s.json">Sine 0-100 (10s)</option>
+        </select>
     </div>
     <div class="file-list">
       <select [size]="60" [(ngModel)]="selectedIndex" *ngIf="files.length" (change)="loadVideo()">
@@ -10,7 +15,7 @@
       </select>
     </div>
   </div>
-  <div class="video-block" *ngIf="selectedFile">
+  <div class="video-block" [class.vertical]="isVertical" *ngIf="selectedFile">
     <div class="video-container" [class.loading]="!videoSrc" [class.zoom]="zoom">
       <!-- background image if used -->
       <!-- <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div> -->
@@ -18,9 +23,7 @@
       <video #videoRef [hidden]="!videoSrc" [src]="videoSrc || null" muted playsinline webkit-playsinline preload="metadata"
         (ended)="autoNext()" (loadeddata)="onLoadedData()" (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
-    <input type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()"
-      *ngIf="videoDuration > 0">
-    <div class="video-controls">
+    <div class="video-controls" role="group" aria-label="Playback controls">
       <button mat-raised-button color="primary" (click)="play()">Play</button>
       <button mat-raised-button color="primary" (click)="pause()">Pause</button>
       <button mat-button (click)="restart()">Restart</button>
@@ -28,9 +31,11 @@
       <button mat-button (click)="next()">Next</button>
       <button mat-button (click)="toggleFullscreen()">Fullscreen</button>
       <button mat-button (click)="toggleZoom()">{{zoom ? 'Unzoom' : 'Zoom'}}</button>
+      <div class="fixture-badge" *ngIf="fixtureLabel">Fixture: {{fixtureLabel}}</div>
     </div>
+    <input class="slider" *ngIf="videoDuration > 0" type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()" />
     <div class="chart-block">
-      <canvas #chartRef width="600" height="200"></canvas>
+      <canvas #chartRef width="600" height="100"></canvas>
       <div class="chart-placeholder" *ngIf="!funscriptData">No funscript data</div>
     </div>
   </div>

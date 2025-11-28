@@ -34,12 +34,38 @@ export class PlayerComponent {
   preloadedUrls: Map<number, string> = new Map();
   // Zoom mode: false -> object-fit: contain; true -> object-fit: cover
   zoom = false;
+  isVertical = false; // true if video has aspect ratio < 1 (portrait)
+  selectedFixture: string = '';
+  fixturesPath = '/fixtures/';
+  fixtureLabel = '';
+  isDefaultFunscript = false; // whether the current funscript is a generated default
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('chartRef') chartRef!: ElementRef<HTMLCanvasElement>;
 
   constructor(private cdr: ChangeDetectorRef) {
     Chart.register(annotationPlugin);
+  }
+
+  async loadFixture(filename?: string) {
+    if (!filename) {
+      this.selectedFixture = '';
+      this.fixtureLabel = '';
+      return;
+    }
+    try {
+      const res = await fetch(`${this.fixturesPath}${filename}`);
+      if (!res.ok) throw new Error(`Failed to fetch fixture ${filename}`);
+      const data = await res.json();
+      this.funscriptData = data;
+      this.isDefaultFunscript = false;
+      this.fixtureLabel = filename;
+      // recreate chart with the new data
+      this.cdr.detectChanges();
+      requestAnimationFrame(() => { try { this.createChart(); } catch (e) { console.error('createChart error:', e); } });
+    } catch (e) {
+      console.error('Failed to load fixture:', e);
+    }
   }
 
   toggleZoom() {
@@ -198,6 +224,7 @@ export class PlayerComponent {
       this.videoSrc = URL.createObjectURL(videoFile);
     }
     this.funscriptData = funscriptData;
+    this.isDefaultFunscript = false;
 
     if (this.funscriptData) {
       this.cdr.detectChanges();
@@ -224,11 +251,52 @@ export class PlayerComponent {
       const container = v.parentElement as HTMLElement | null;
       if (container && v.videoWidth && v.videoHeight) {
         container.style.setProperty('--video-aspect', `${v.videoWidth}/${v.videoHeight}`);
+        this.isVertical = (v.videoWidth / v.videoHeight) < 1;
       }
     } catch (e) {
       console.warn('Failed to set video aspect CSS variable', e);
     }
+    // If we don't have any funscript data from file or cache, generate a default one now
+    if (!this.funscriptData) {
+      try {
+        this.funscriptData = this.generateDefaultFunscript(this.videoDuration);
+        this.isDefaultFunscript = true;
+      } catch (e) {
+        console.warn('Failed to generate default funscript:', e);
+        this.isDefaultFunscript = false;
+      }
+      // create the chart with the newly generated default funscript
+      requestAnimationFrame(() => {
+        try { this.createChart(); } catch (e) { console.error('Error creating chart with default funscript:', e); }
+      });
+    }
     this.cdr.detectChanges();
+  }
+
+  private generateDefaultFunscript(durationSeconds: number) {
+    const dur = Math.max(0.5, durationSeconds || 1);
+    // choose integer cycles >= duration in seconds to ensure frequency >= 1Hz
+    const cycles = Math.max(1, Math.ceil(dur));
+    const frequency = cycles / dur; // cycles per second
+    const dtMs = 50; // 20 samples per second
+    const totalMs = Math.round(dur * 1000);
+    const actions: Array<{ at: number; pos: number }> = [];
+    const center = 5;
+    const amplitude = 5; // to stay within 0..10
+    const phase = Math.PI / 2; // start at peak (pos=10)
+    for (let t = 0; t <= totalMs; t += dtMs) {
+      const seconds = t / 1000;
+      const raw = center + amplitude * Math.sin(2 * Math.PI * frequency * seconds + phase);
+      const pos = Math.max(0, Math.min(10, Math.round(raw * 100) / 100));
+      actions.push({ at: t, pos });
+    }
+    if (actions.length === 0 || actions[actions.length - 1].at !== totalMs) {
+      const s = totalMs / 1000;
+      const raw = center + amplitude * Math.sin(2 * Math.PI * frequency * s + phase);
+      const pos = Math.max(0, Math.min(10, Math.round(raw * 100) / 100));
+      actions.push({ at: totalMs, pos });
+    }
+    return { version: '1.0', actions };
   }
 
   updateProgressLine(time: number) {
@@ -253,15 +321,31 @@ export class PlayerComponent {
     try {
       const actions = this.funscriptData?.actions?.sort((a: any, b: any) => a.at - b.at) || [];
       const dataPoints = actions.length > 0 ? actions.map((a: any) => ({ x: a.at / 1000, y: a.pos })) : [];
-      // Calculate max time for x-axis
-      const maxTime = dataPoints.length > 0 ? Math.max(...dataPoints.map((p: any) => p.x)) : 100;
+      // Calculate max time for x-axis: prefer the data max but fall back to videoDuration or a default
+      const maxTime = dataPoints.length > 0 ? Math.max(...dataPoints.map((p: any) => p.x)) : (this.videoDuration > 0 ? this.videoDuration : 100);
+      const yMax = this.isDefaultFunscript ? 10 : 100;
 
       const canvas = this.chartRef.nativeElement as HTMLCanvasElement;
+      // If an existing Chart is attached to this canvas, destroy it before creating a new one
+      try {
+        const existing = (Chart as any).getChart ? (Chart as any).getChart(canvas) : undefined;
+        if (existing) {
+          try { existing.destroy(); } catch (err) { console.warn('Error destroying existing Chart instance', err); }
+        }
+        if (this.chart && (this.chart as any).canvas === canvas) {
+          try { this.chart.destroy(); } catch (err) { /* ignore */ }
+          this.chart = undefined;
+        }
+      } catch (err) {
+        // Fail safe: ensure we don't abort chart creation, just warn
+        console.warn('Unable to destroy previous Chart instance safely', err);
+      }
       if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
         // Defer if the canvas hasn't been sized yet
         requestAnimationFrame(() => this.createChart());
         return;
       }
+      console.debug('createChart: dataPoints=', dataPoints.length, 'maxTime=', maxTime, 'yMax=', yMax, 'canvas size=', canvas.offsetWidth, 'x', canvas.offsetHeight);
 
       this.chart = new Chart(canvas, {
         type: 'line',
@@ -269,7 +353,12 @@ export class PlayerComponent {
           datasets: [{
             data: dataPoints,
             label: 'Funscript',
-            borderColor: 'blue',
+            borderColor: 'rgba(34, 180, 255, 0.95)',
+            backgroundColor: 'rgba(34, 180, 255, 0.1)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.15,
+            spanGaps: true,
             fill: false
           }]
         },
@@ -284,7 +373,7 @@ export class PlayerComponent {
             y: {
               display: false,
               min: 0,
-              max: 100
+              max: yMax
             }
           },
           plugins: {
@@ -298,7 +387,7 @@ export class PlayerComponent {
                   scaleID: 'x',
                   yScaleID: 'y',
                   yMin: 0,
-                  yMax: 100,
+                  yMax: yMax,
                   value: 0,
                   borderColor: 'red',
                   borderWidth: 2

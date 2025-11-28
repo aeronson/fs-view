@@ -57,3 +57,16 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+# UI NOTES
+if video aspect ratio >=1 (horizontal)
+    video block on top. 
+    play controls under video
+    slider & chart under video beside play controls
+
+
+if video aspect ratio < 1 (vertical)
+    video block on left
+    play controls to the right of video
+    slider and chart under the play controls to the right of video 
+
