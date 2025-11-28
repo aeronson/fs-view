@@ -347,6 +347,7 @@ export class PlayerComponent {
       }
       console.debug('createChart: dataPoints=', dataPoints.length, 'maxTime=', maxTime, 'yMax=', yMax, 'canvas size=', canvas.offsetWidth, 'x', canvas.offsetHeight);
 
+      // Ensure chart uses container size (canvas CSS) instead of fixed attribute
       this.chart = new Chart(canvas, {
         type: 'line',
         data: {
@@ -363,6 +364,8 @@ export class PlayerComponent {
           }]
         },
         options: {
+          responsive: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               type: 'linear',
@@ -398,7 +401,9 @@ export class PlayerComponent {
         } as any
       });
       try {
-        // Give Chart.js a tick to compute layout, then ensure it's sized correctly
+        // Ensure the canvas sizing is respected and Chart.js resizes correctly based on CSS
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
         requestAnimationFrame(() => {
           try { this.chart?.resize(); this.chart?.update('none'); } catch (e) { /* ignore */ }
         });

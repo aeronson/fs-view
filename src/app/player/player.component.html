@@ -3,11 +3,11 @@
     <div class="file-input-block">
       <button mat-button (click)="selectFolder()">Select Folder</button>
       <input type="text" [(ngModel)]="selectedFolder" readonly>
-        <select aria-label="Chart fixtures" [(ngModel)]="selectedFixture" (change)="loadFixture(selectedFixture)">
-          <option value="">— fixtures —</option>
-          <option value="sine-0-10-10s.json">Sine 0-10 (10s)</option>
-          <option value="sine-0-100-10s.json">Sine 0-100 (10s)</option>
-        </select>
+      <select aria-label="Chart fixtures" [(ngModel)]="selectedFixture" (change)="loadFixture(selectedFixture)">
+        <option value="">— fixtures —</option>
+        <option value="sine-0-10-10s.json">Sine 0-10 (10s)</option>
+        <option value="sine-0-100-10s.json">Sine 0-100 (10s)</option>
+      </select>
     </div>
     <div class="file-list">
       <select [size]="60" [(ngModel)]="selectedIndex" *ngIf="files.length" (change)="loadVideo()">
@@ -16,27 +16,31 @@
     </div>
   </div>
   <div class="video-block" [class.vertical]="isVertical" *ngIf="selectedFile">
-    <div class="video-container" [class.loading]="!videoSrc" [class.zoom]="zoom">
+    <div class="video-container-block" [class.loading]="!videoSrc" [class.zoom]="zoom">
       <!-- background image if used -->
       <!-- <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div> -->
       <!-- Keep the video element in DOM and hide with [hidden] to avoid re-creating and flicker -->
-      <video #videoRef [hidden]="!videoSrc" [src]="videoSrc || null" muted playsinline webkit-playsinline preload="metadata"
-        (ended)="autoNext()" (loadeddata)="onLoadedData()" (loadedmetadata)="onLoadedMetadata()"></video>
+      <video #videoRef [hidden]="!videoSrc" [src]="videoSrc || null" muted playsinline webkit-playsinline
+        preload="metadata" (ended)="autoNext()" (loadeddata)="onLoadedData()"
+        (loadedmetadata)="onLoadedMetadata()"></video>
     </div>
-    <div class="video-controls" role="group" aria-label="Playback controls">
-      <button mat-raised-button color="primary" (click)="play()">Play</button>
-      <button mat-raised-button color="primary" (click)="pause()">Pause</button>
-      <button mat-button (click)="restart()">Restart</button>
-      <button mat-button (click)="previous()">Previous</button>
-      <button mat-button (click)="next()">Next</button>
-      <button mat-button (click)="toggleFullscreen()">Fullscreen</button>
-      <button mat-button (click)="toggleZoom()">{{zoom ? 'Unzoom' : 'Zoom'}}</button>
-      <div class="fixture-badge" *ngIf="fixtureLabel">Fixture: {{fixtureLabel}}</div>
-    </div>
-    <input class="slider" *ngIf="videoDuration > 0" type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()" />
-    <div class="chart-block">
-      <canvas #chartRef width="600" height="100"></canvas>
-      <div class="chart-placeholder" *ngIf="!funscriptData">No funscript data</div>
+    <div class="video-controls-block">
+      <div class="video-controls" role="group" aria-label="Playback controls">
+        <button mat-raised-button color="primary" (click)="play()">Play</button>
+        <button mat-raised-button color="primary" (click)="pause()">Pause</button>
+        <button mat-button (click)="restart()">Restart</button>
+        <button mat-button (click)="previous()">Previous</button>
+        <button mat-button (click)="next()">Next</button>
+        <button mat-button (click)="toggleFullscreen()">Fullscreen</button>
+        <button mat-button (click)="toggleZoom()">{{zoom ? 'Unzoom' : 'Zoom'}}</button>
+        <div class="fixture-badge" *ngIf="fixtureLabel">Fixture: {{fixtureLabel}}</div>
+      </div>
+      <input class="slider" *ngIf="videoDuration > 0" type="range" [min]="0" [max]="videoDuration" [step]="0.01"
+        [(ngModel)]="currentTime" (input)="seekVideo()" />
+      <div class="chart-block">
+        <canvas #chartRef></canvas>
+        <div class="chart-placeholder" *ngIf="!funscriptData">No funscript data</div>
+      </div>
     </div>
   </div>
 </div>
