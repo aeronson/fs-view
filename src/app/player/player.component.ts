@@ -265,8 +265,8 @@ export class PlayerComponent {
         const actionCountStr = parts[2];
         const num = parseFloat(actionCountStr.slice(0, -1));
         if (!isNaN(num)) {
-          frequency = num / durationSeconds;
-        } 
+          frequency = num / Math.max(0.1, durationSeconds);
+        }
         if (parts.length > 3) {
           rangeType = parts[3].toLowerCase();
           if (!['h', 'l', 'f'].includes(rangeType)) rangeType = 'f';
@@ -282,7 +282,7 @@ export class PlayerComponent {
     const amplitude = (maxPos - minPos) / 2;
     const center = (minPos + maxPos) / 2;
 
-    // Default frequencies per position (aligned with studies: 1.3–1.8 Hz in humans)
+    // Default frequencies per position
     let baseFreq = 1.0;
     switch (kind) {
       case 'ms': baseFreq = 1.35; break;
@@ -302,16 +302,27 @@ export class PlayerComponent {
     const actions: Array<{ at: number; pos: number }> = [];
     const isSin = kind === 'sin';
 
-    // Thrust fraction per position based on assumptions and biomechanics (smaller = faster thrust phase, gravity-assisted positions have smaller fractions for quicker thrust)
-    let thrustFraction = 0.5;
+    // Base thrust fraction per position
+    let baseThrustFraction = 0.5;
     if (!isSin) {
       switch (kind) {
-        case 'ms': thrustFraction = 0.35; break;  // Gravity assistance on thrust: faster thrust
-        case 'dg': thrustFraction = 0.45; break;  // Pure muscular: less asymmetry, slower thrust
+        case 'ms': baseThrustFraction = 0.35; break;
+        case 'dg': baseThrustFraction = 0.45; break;
         case 'cg':
-        case 'rcg': thrustFraction = 0.3; break;  // Gravity assistance on female thrust: fastest thrust
-        case 'bj': thrustFraction = 0.4; break;   // Muscular technique: moderate thrust speed
+        case 'rcg': baseThrustFraction = 0.3; break;
+        case 'bj': baseThrustFraction = 0.4; break;
       }
+    }
+
+    // Adjust for gravity positions at higher frequencies (more muscular, less asymmetry)
+    let thrustFraction = baseThrustFraction;
+    const gravityPositions = ['ms', 'cg', 'rcg'];
+    if (gravityPositions.includes(kind) && !isSin) {
+      const muscularThrustFraction = 0.45;
+      const lowFreq = 1.0;
+      const highFreq = 2.5;
+      const factor = Math.max(0, Math.min(1, (frequency - lowFreq) / (highFreq - lowFreq)));
+      thrustFraction = baseThrustFraction + factor * (muscularThrustFraction - baseThrustFraction);
     }
     const withdrawalFraction = 1 - thrustFraction;
 
