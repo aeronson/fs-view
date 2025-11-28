@@ -3,6 +3,7 @@ import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef, HostListen
 import { FormsModule } from '@angular/forms';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
+import * as Handy from '@ohdoki/handy-sdk';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
@@ -36,6 +37,11 @@ export class PlayerComponent {
   zoom = false;
   isVertical = false; // true if video has aspect ratio < 1 (portrait)
   isDefaultFunscript = false; // whether the current funscript is a generated default
+
+  handy: any;
+  connected = false;
+  connectionKey = '';
+  scriptUrl: string | null = null;
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('chartRef') chartRef!: ElementRef<HTMLCanvasElement>;
@@ -203,6 +209,13 @@ export class PlayerComponent {
     }
     this.funscriptData = funscriptData;
     this.isDefaultFunscript = false;
+
+    if (this.connected && this.funscriptData) {
+      const scriptData = JSON.stringify(this.funscriptData);
+      this.scriptUrl = await this.handy.uploadDataToServer(scriptData);
+      await this.handy.setScript(this.scriptUrl);
+      await this.handy.sync();
+    }
 
     if (this.funscriptData) {
       this.cdr.detectChanges();
@@ -551,10 +564,14 @@ export class PlayerComponent {
     }
   }
 
-  seekVideo() {
+  async seekVideo() {
     if (this.videoRef) {
       this.videoRef.nativeElement.currentTime = this.currentTime;
       this.updateProgressLine(this.currentTime);
+      if (this.connected) {
+        await this.handy.hsspPlay(this.currentTime * 1000, this.handy.getEstimatedServerTime());
+        if (!this.isPlaying) await this.handy.hsspStop();
+      }
     }
   }
 
@@ -629,21 +646,27 @@ export class PlayerComponent {
     }
   }
 
-  play() {
+  async play() {
     if (this.videoRef) {
       this.isPlaying = true;
-      this.videoRef.nativeElement.play();
+      await this.videoRef.nativeElement.play();
       this.startAnimationLoop();
+      if (this.connected) {
+        await this.handy.hsspPlay(this.currentTime * 1000, this.handy.getEstimatedServerTime());
+      }
     }
   }
 
-  pause() {
+  async pause() {
     if (this.videoRef) {
       this.isPlaying = false;
       this.videoRef.nativeElement.pause();
       this.stopAnimationLoop();
       this.currentTime = this.videoRef.nativeElement.currentTime;
       this.updateProgressLine(this.currentTime);
+      if (this.connected) {
+        await this.handy.hsspStop();
+      }
     }
   }
 
@@ -677,5 +700,11 @@ export class PlayerComponent {
     for (const url of this.preloadedUrls.values()) {
       try { URL.revokeObjectURL(url); } catch (e) { }
     }
+  }
+
+  async connectToHandy() {
+    this.handy = Handy.init();
+    const result = await this.handy.connect(this.connectionKey);
+    if (result) this.connected = true;
   }
 }

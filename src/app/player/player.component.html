@@ -29,6 +29,8 @@
         <button mat-button (click)="toggleFullscreen()">Fullscreen</button>
         <button mat-button (click)="toggleZoom()">{{zoom ? 'Unzoom' : 'Zoom'}}</button>
         <!-- Fixture badge removed (UI cleaned up) -->
+        <input type="text" [(ngModel)]="connectionKey" placeholder="Handy Connection Key">
+        <button mat-button (click)="connectToHandy()" [disabled]="connected">Connect Handy</button>
       </div>
       <input class="slider" *ngIf="videoDuration > 0" type="range" [min]="0" [max]="videoDuration" [step]="0.01"
         [(ngModel)]="currentTime" (input)="seekVideo()" />
