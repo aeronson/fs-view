@@ -22,12 +22,22 @@
   gap: var(--gutter, 1rem);
 }
 
+.file-block {
+  width: 10rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gutter, 1rem);
+  min-height: 0;
+  padding: 0.5rem;
+}
+
 .file-input-block {
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* stack button and input */
   width: 100%;
-  min-width: var(--left-pane-min-width, 20rem);
+  box-sizing: border-box;
   column-gap: var(--gutter, 1rem);
+  row-gap: 0.5rem;
   row-gap: 0; /* controls sit directly over the slider */
   padding: 0 0.25rem; /* added padding for formatting */
 }
@@ -42,6 +52,7 @@
 .file-list {
   margin-top: 10px;
   width: 100%;
+  box-sizing: border-box;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -106,12 +117,7 @@
   align-self: center;
 }
 
-.fixture-badge {
-  margin-left: 0.5rem;
-  align-self: center;
-  color: rgba(255,255,255,0.9);
-  font-size: 0.9rem;
-}
+/* fixture badge removed (no fixtures UI) */
 
 .chart-block {
   width: 100%;
@@ -133,6 +139,24 @@
   align-items: stretch;
 }
 
+/* In vertical (portrait) mode, let the video container fill the full available height
+   so tall videos scale to the maximum vertical area. Remove aspect ratio so the
+   container can scale to height, and ensure the video fills height with width auto. */
+.video-block.vertical .video-container-block {
+  flex: 0 1 60%; /* video takes approx 60% in vertical mode */
+  min-width: 40%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  aspect-ratio: auto; /* let the height determine width */
+  max-width: none;
+}
+.video-block.vertical .video-container-block video {
+  width: auto;
+  height: 100%;
+  object-fit: contain; /* letterbox if necessary, fill height */
+}
+
 /* Keep controls centered in horizontal layout left column */
 .video-controls { padding: 0.5rem; }
 
@@ -141,8 +165,14 @@
   align-items: flex-start; /* stack controls at top of right column in vertical mode */
   justify-content: flex-start;
   align-self: flex-start;
-  width: var(--right-column-width, 360px);
-  flex: 0 0 var(--right-column-width, 360px);
+  width: auto;
+  max-width: none;
+  flex: 1 1 auto; /* expand to fill remaining width */
+  min-width: 220px;
+}
+/* Ensure right column doesn't take more than 50% so video has room on narrow screens */
+.video-block.vertical .video-controls-block {
+  max-width: 60vw; /* ensure right column remains usable but can expand */
 }
 
 .slider {

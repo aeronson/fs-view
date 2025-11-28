@@ -35,9 +35,6 @@ export class PlayerComponent {
   // Zoom mode: false -> object-fit: contain; true -> object-fit: cover
   zoom = false;
   isVertical = false; // true if video has aspect ratio < 1 (portrait)
-  selectedFixture: string = '';
-  fixturesPath = '/fixtures/';
-  fixtureLabel = '';
   isDefaultFunscript = false; // whether the current funscript is a generated default
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
@@ -47,26 +44,7 @@ export class PlayerComponent {
     Chart.register(annotationPlugin);
   }
 
-  async loadFixture(filename?: string) {
-    if (!filename) {
-      this.selectedFixture = '';
-      this.fixtureLabel = '';
-      return;
-    }
-    try {
-      const res = await fetch(`${this.fixturesPath}${filename}`);
-      if (!res.ok) throw new Error(`Failed to fetch fixture ${filename}`);
-      const data = await res.json();
-      this.funscriptData = data;
-      this.isDefaultFunscript = false;
-      this.fixtureLabel = filename;
-      // recreate chart with the new data
-      this.cdr.detectChanges();
-      requestAnimationFrame(() => { try { this.createChart(); } catch (e) { console.error('createChart error:', e); } });
-    } catch (e) {
-      console.error('Failed to load fixture:', e);
-    }
-  }
+  // (fixtures support was removed; clean up any related code)
 
   toggleZoom() {
     this.zoom = !this.zoom;
