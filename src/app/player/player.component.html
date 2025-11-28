@@ -1,0 +1,34 @@
+<div class="main">
+  <div class="file-block">
+    <div class="file-input-block">
+      <button mat-button (click)="selectFolder()">Select Folder</button>
+      <input type="text" [(ngModel)]="selectedFolder" readonly>
+    </div>
+    <div class="file-list">
+      <select [size]="60" [(ngModel)]="selectedIndex" *ngIf="files.length" (change)="loadVideo()">
+        <option *ngFor="let f of files; let i = index" [value]="i">{{getFileName(f)}}</option>
+      </select>
+    </div>
+  </div>
+  <div class="video-block" *ngIf="selectedFile">
+    <div class="video-container" [class.loading]="!videoSrc">
+      <div class="video-bg" [style.backgroundImage]="backgroundDataUrl ? 'url(' + backgroundDataUrl + ')' : 'none'"></div>
+      <video #videoRef *ngIf="videoSrc" [src]="videoSrc" muted (ended)="autoNext()" (loadeddata)="onLoadedData()"
+        (loadedmetadata)="onLoadedMetadata()"></video>
+    </div>
+    <input type="range" [min]="0" [max]="videoDuration" [step]="0.01" [(ngModel)]="currentTime" (input)="seekVideo()"
+      *ngIf="videoDuration > 0">
+    <div class="video-controls">
+      <button mat-raised-button color="primary" (click)="play()">Play</button>
+      <button mat-raised-button color="primary" (click)="pause()">Pause</button>
+      <button mat-button (click)="restart()">Restart</button>
+      <button mat-button (click)="previous()">Previous</button>
+      <button mat-button (click)="next()">Next</button>
+      <button mat-button (click)="toggleFullscreen()">Fullscreen</button>
+    </div>
+    <div class="chart-block">
+      <canvas #chartRef width="600" height="200"></canvas>
+      <div class="chart-placeholder" *ngIf="!funscriptData">No funscript data</div>
+    </div>
+  </div>
+</div>
