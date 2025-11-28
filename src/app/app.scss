@@ -93,16 +93,14 @@
    Right column: video block
    ------------------------------- */
 .video-block {
-  /* Use grid for predictable rows: video expands (1fr), then range, controls, and chart have fixed rows */
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto var(--controls-height) var(--chart-height);
+  /* Use flexbox: default horizontal layout (video on top, controls/slider/chart below) */
+  display: flex;
+  flex-direction: column; /* video on top, controls + slider + chart below */
   align-items: stretch;
-  justify-items: center;
   gap: 0.5rem;
   flex: 1 1 auto; /* take remaining horizontal space */
-  height: 100%; /* use full height of parent flex container */
-  min-height: 0; /* allow children to shrink */
+  height: 100%;
+  min-height: 0;
 }
 
 /* Place the video container into the first grid row */
