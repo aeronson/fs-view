@@ -85,6 +85,10 @@
   display: block;
 }
 
+.video-container.zoom video {
+  object-fit: cover; /* Zoom mode: fill container, crop as needed */
+}
+
 .video-controls {
   display: flex;
   gap: 10px;

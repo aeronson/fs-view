@@ -32,12 +32,19 @@ export class PlayerComponent {
   private nextVideoCache?: { file: File; funscriptData: any };
   // Map of preloaded object URLs by file index
   preloadedUrls: Map<number, string> = new Map();
+  // Zoom mode: false -> object-fit: contain; true -> object-fit: cover
+  zoom = false;
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('chartRef') chartRef!: ElementRef<HTMLCanvasElement>;
 
   constructor(private cdr: ChangeDetectorRef) {
     Chart.register(annotationPlugin);
+  }
+
+  toggleZoom() {
+    this.zoom = !this.zoom;
+    try { this.cdr.detectChanges(); } catch {}
   }
 
   @HostListener('document:keydown.escape', ['$event'])
