@@ -48,7 +48,7 @@ export class PlayerComponent {
 
   toggleZoom() {
     this.zoom = !this.zoom;
-    try { this.cdr.detectChanges(); } catch {}
+    try { this.cdr.detectChanges(); } catch { }
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -82,7 +82,7 @@ export class PlayerComponent {
           const url = URL.createObjectURL(file);
           this.preloadedUrls.set(i, url);
           // Minor debug hint
-          try { this.cdr.detectChanges(); } catch {}
+          try { this.cdr.detectChanges(); } catch { }
         } catch (e) {
           console.error('Failed to preload file index', i, e);
         }
@@ -193,7 +193,7 @@ export class PlayerComponent {
     const preloaded = this.preloadedUrls.get(this.selectedIndex);
     if (this.videoSrc && !this.preloadedUrls.has(this.selectedIndex)) {
       // Only revoke the old object URL if it's not one of the preloaded persistent URLs
-      try { URL.revokeObjectURL(this.videoSrc); } catch {}
+      try { URL.revokeObjectURL(this.videoSrc); } catch { }
     }
 
     if (preloaded) {
@@ -217,7 +217,7 @@ export class PlayerComponent {
       // still create an empty chart so there's a placeholder
       this.cdr.detectChanges();
       requestAnimationFrame(() => {
-        try { this.createChart(); } catch (e) {}
+        try { this.createChart(); } catch (e) { }
       });
     }
   }
@@ -237,7 +237,7 @@ export class PlayerComponent {
     // If we don't have any funscript data from file or cache, generate a default one now
     if (!this.funscriptData) {
       try {
-        this.funscriptData = this.generateDefaultFunscript(this.videoDuration);
+        this.funscriptData = this.generateDefaultFunscript(this.selectedFile, this.videoDuration);
         this.isDefaultFunscript = true;
       } catch (e) {
         console.warn('Failed to generate default funscript:', e);
@@ -251,32 +251,94 @@ export class PlayerComponent {
     this.cdr.detectChanges();
   }
 
-  private generateDefaultFunscript(durationSeconds: number) {
+  private generateDefaultFunscript(selectedFile: string, durationSeconds: number) {
+    const parts = selectedFile.split('-');
+    let kind = 'sin';
+    let actionCount: number = 0;
+
+    let frequency: number | null = null;
+    let rangeType = 'f';
+    if (parts.length > 1) {
+      kind = parts[1].toLowerCase();
+      if (!['ms', 'dg', 'cg', 'rcg', 'bj', 'sin'].includes(kind)) {
+        kind = 'sin';
+      }
+      if (parts.length > 2) {
+        actionCount = parseInt(parts[2].slice(0, -1), 10);
+        if (isNaN(actionCount)) {frequency = null; } else {
+          const approxFreq = actionCount / durationSeconds;
+          frequency = Math.max(0.1, Math.min(10, approxFreq));
+        }
+        if (parts.length > 3) {
+          rangeType = parts[3].toLowerCase();
+          if (!['h', 'l', 'f'].includes(rangeType)) rangeType = 'f';
+        }
+      }
+    }
+    let minPos = 0;
+    let maxPos = 100;
+    if (rangeType === 'h') minPos = 50;
+    else if (rangeType === 'l') maxPos = 50;
+    const center = (minPos + maxPos) / 2;
+    const amplitude = (maxPos - minPos) / 2;
+    let defaultFreq = 1.0;
+    switch (kind) {
+      case 'ms': defaultFreq = 1.35; break;
+      case 'dg': defaultFreq = 1.8; break;
+      case 'cg':
+      case 'rcg': defaultFreq = 1.33; break;
+      case 'bj': defaultFreq = 1.5; break;
+    }
+    if (frequency === null) frequency = defaultFreq;
     const dur = Math.max(0.5, durationSeconds || 1);
-    // choose integer cycles >= duration in seconds to ensure frequency >= 1Hz
-    const cycles = Math.max(1, Math.ceil(dur));
-    const frequency = cycles / dur; // cycles per second
-    const dtMs = 50; // 20 samples per second
     const totalMs = Math.round(dur * 1000);
+    const approximateCycles = frequency * dur;
+    const cycles = Math.max(1, Math.ceil(approximateCycles));
+    const adjustedFreq = cycles / dur;
+    const dtMs = 50;
     const actions: Array<{ at: number; pos: number }> = [];
-    const center = 5;
-    const amplitude = 5; // to stay within 0..10
-    const phase = Math.PI / 2; // start at peak (pos=10)
+    const isSin = kind === 'sin';
+    const withdrawalFraction = isSin ? 0.5 : 0.6;
+    const thrustFraction = 1 - withdrawalFraction;
+    const phase = Math.PI / 2; // for sin
     for (let t = 0; t <= totalMs; t += dtMs) {
       const seconds = t / 1000;
-      const raw = center + amplitude * Math.sin(2 * Math.PI * frequency * seconds + phase);
-      const pos = Math.max(0, Math.min(10, Math.round(raw * 100) / 100));
+      let pos: number;
+      if (isSin) {
+        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * seconds + phase);
+        pos = Math.max(minPos, Math.min(maxPos, Math.round(raw * 100) / 100));
+      } else {
+        const cyclePosition = (seconds * adjustedFreq) % 1;
+        let normPos: number;
+        if (cyclePosition < withdrawalFraction) {
+          normPos = 1 - (cyclePosition / withdrawalFraction);
+        } else {
+          normPos = (cyclePosition - withdrawalFraction) / thrustFraction;
+        }
+        pos = Math.max(minPos, Math.min(maxPos, Math.round((minPos + (maxPos - minPos) * normPos) * 100) / 100));
+      }
       actions.push({ at: t, pos });
     }
-    if (actions.length === 0 || actions[actions.length - 1].at !== totalMs) {
-      const s = totalMs / 1000;
-      const raw = center + amplitude * Math.sin(2 * Math.PI * frequency * s + phase);
-      const pos = Math.max(0, Math.min(10, Math.round(raw * 100) / 100));
+    if (actions[actions.length - 1].at !== totalMs) {
+      const seconds = totalMs / 1000;
+      let pos: number;
+      if (isSin) {
+        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * seconds + phase);
+        pos = Math.max(minPos, Math.min(maxPos, Math.round(raw * 100) / 100));
+      } else {
+        const cyclePosition = (seconds * adjustedFreq) % 1;
+        let normPos: number;
+        if (cyclePosition < withdrawalFraction) {
+          normPos = 1 - (cyclePosition / withdrawalFraction);
+        } else {
+          normPos = (cyclePosition - withdrawalFraction) / thrustFraction;
+        }
+        pos = Math.max(minPos, Math.min(maxPos, Math.round((minPos + (maxPos - minPos) * normPos) * 100) / 100));
+      }
       actions.push({ at: totalMs, pos });
     }
     return { version: '1.0', actions };
   }
-
   updateProgressLine(time: number) {
     if (this.chart) {
       try {
@@ -301,7 +363,7 @@ export class PlayerComponent {
       const dataPoints = actions.length > 0 ? actions.map((a: any) => ({ x: a.at / 1000, y: a.pos })) : [];
       // Calculate max time for x-axis: prefer the data max but fall back to videoDuration or a default
       const maxTime = dataPoints.length > 0 ? Math.max(...dataPoints.map((p: any) => p.x)) : (this.videoDuration > 0 ? this.videoDuration : 100);
-      const yMax = this.isDefaultFunscript ? 10 : 100;
+      const yMax = 100; //this.isDefaultFunscript ? 10 : 100;
 
       const canvas = this.chartRef.nativeElement as HTMLCanvasElement;
       // If an existing Chart is attached to this canvas, destroy it before creating a new one
@@ -385,7 +447,7 @@ export class PlayerComponent {
         requestAnimationFrame(() => {
           try { this.chart?.resize(); this.chart?.update('none'); } catch (e) { /* ignore */ }
         });
-      } catch (e) {}
+      } catch (e) { }
     } catch (error) {
       console.error('Failed to create chart:', error);
     }
@@ -422,7 +484,7 @@ export class PlayerComponent {
       const nextIndex = this.selectedIndex + 1;
       const nextFileEntry = this.files[nextIndex];
       const nextFile = await nextFileEntry.getFile();
-      
+
       let nextFunscriptData = null;
       try {
         const funHandle = await this.dirHandle.getFileHandle(`${this.getFileName(nextFileEntry)}.funscript`);
@@ -576,9 +638,9 @@ export class PlayerComponent {
       if (this.videoSrc && !Array.from(this.preloadedUrls.values()).includes(this.videoSrc)) {
         URL.revokeObjectURL(this.videoSrc);
       }
-    } catch (e) {}
+    } catch (e) { }
     for (const url of this.preloadedUrls.values()) {
-      try { URL.revokeObjectURL(url); } catch (e) {}
+      try { URL.revokeObjectURL(url); } catch (e) { }
     }
   }
 }
