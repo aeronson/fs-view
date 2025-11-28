@@ -254,91 +254,115 @@ export class PlayerComponent {
   private generateDefaultFunscript(selectedFile: string, durationSeconds: number) {
     const parts = selectedFile.split('-');
     let kind = 'sin';
-    let actionCount: number = 0;
-
     let frequency: number | null = null;
     let rangeType = 'f';
+
     if (parts.length > 1) {
       kind = parts[1].toLowerCase();
-      if (!['ms', 'dg', 'cg', 'rcg', 'bj', 'sin'].includes(kind)) {
-        kind = 'sin';
-      }
+      if (!['ms', 'dg', 'cg', 'rcg', 'bj', 'sin'].includes(kind)) kind = 'sin';
+
       if (parts.length > 2) {
-        actionCount = parseInt(parts[2].slice(0, -1), 10);
-        if (isNaN(actionCount)) {frequency = null; } else {
-          const approxFreq = actionCount / durationSeconds;
-          frequency = Math.max(0.1, Math.min(10, approxFreq));
-        }
+        const actionCountStr = parts[2];
+        const num = parseFloat(actionCountStr.slice(0, -1));
+        if (!isNaN(num)) {
+          frequency = num / durationSeconds;
+        } 
         if (parts.length > 3) {
           rangeType = parts[3].toLowerCase();
           if (!['h', 'l', 'f'].includes(rangeType)) rangeType = 'f';
         }
       }
     }
+
+    // Range handling
     let minPos = 0;
     let maxPos = 100;
     if (rangeType === 'h') minPos = 50;
     else if (rangeType === 'l') maxPos = 50;
-    const center = (minPos + maxPos) / 2;
     const amplitude = (maxPos - minPos) / 2;
-    let defaultFreq = 1.0;
+    const center = (minPos + maxPos) / 2;
+
+    // Default frequencies per position (aligned with studies: 1.3–1.8 Hz in humans)
+    let baseFreq = 1.0;
     switch (kind) {
-      case 'ms': defaultFreq = 1.35; break;
-      case 'dg': defaultFreq = 1.8; break;
+      case 'ms': baseFreq = 1.35; break;
+      case 'dg': baseFreq = 1.8; break;
       case 'cg':
-      case 'rcg': defaultFreq = 1.33; break;
-      case 'bj': defaultFreq = 1.5; break;
+      case 'rcg': baseFreq = 1.33; break;
+      case 'bj': baseFreq = 1.5; break;
     }
-    if (frequency === null) frequency = defaultFreq;
+    if (frequency === null) frequency = baseFreq;
+
     const dur = Math.max(0.5, durationSeconds || 1);
     const totalMs = Math.round(dur * 1000);
-    const approximateCycles = frequency * dur;
-    const cycles = Math.max(1, Math.ceil(approximateCycles));
-    const adjustedFreq = cycles / dur;
+    const cycles = Math.max(1, Math.ceil(frequency * dur));
+    const adjustedFreq = cycles / dur;               // ensures integer cycles → start = end
     const dtMs = 50;
+
     const actions: Array<{ at: number; pos: number }> = [];
     const isSin = kind === 'sin';
-    const withdrawalFraction = isSin ? 0.5 : 0.6;
-    const thrustFraction = 1 - withdrawalFraction;
-    const phase = Math.PI / 2; // for sin
+
+    // Thrust fraction per position based on assumptions and biomechanics (smaller = faster thrust phase, gravity-assisted positions have smaller fractions for quicker thrust)
+    let thrustFraction = 0.5;
+    if (!isSin) {
+      switch (kind) {
+        case 'ms': thrustFraction = 0.35; break;  // Gravity assistance on thrust: faster thrust
+        case 'dg': thrustFraction = 0.45; break;  // Pure muscular: less asymmetry, slower thrust
+        case 'cg':
+        case 'rcg': thrustFraction = 0.3; break;  // Gravity assistance on female thrust: fastest thrust
+        case 'bj': thrustFraction = 0.4; break;   // Muscular technique: moderate thrust speed
+      }
+    }
+    const withdrawalFraction = 1 - thrustFraction;
+
     for (let t = 0; t <= totalMs; t += dtMs) {
-      const seconds = t / 1000;
+      const s = t / 1000;
       let pos: number;
+
       if (isSin) {
-        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * seconds + phase);
-        pos = Math.max(minPos, Math.min(maxPos, Math.round(raw * 100) / 100));
+        // Symmetric sine, starting at max (100: top/shallow)
+        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * s + Math.PI / 2);
+        pos = Math.round(Math.max(minPos, Math.min(maxPos, raw)) * 100) / 100;
       } else {
-        const cyclePosition = (seconds * adjustedFreq) % 1;
-        let normPos: number;
-        if (cyclePosition < withdrawalFraction) {
-          normPos = 1 - (cyclePosition / withdrawalFraction);
+        // Asymmetric thrust: fast thrust (decrease pos: top/shallow 100 to bottom/deep 0), slow withdrawal (increase pos: bottom/deep 0 to top/shallow 100)
+        const cyclePosition = (s * adjustedFreq) % 1;
+        let norm: number;
+        if (cyclePosition < thrustFraction) {
+          // Fast thrust: 1 to 0
+          norm = 1 - (cyclePosition / thrustFraction);
         } else {
-          normPos = (cyclePosition - withdrawalFraction) / thrustFraction;
+          // Slow withdrawal: 0 to 1
+          norm = (cyclePosition - thrustFraction) / withdrawalFraction;
         }
-        pos = Math.max(minPos, Math.min(maxPos, Math.round((minPos + (maxPos - minPos) * normPos) * 100) / 100));
+        const raw = minPos + (maxPos - minPos) * norm;
+        pos = Math.round(raw * 100) / 100;
       }
       actions.push({ at: t, pos });
     }
+
+    // Ensure final point at exact duration
     if (actions[actions.length - 1].at !== totalMs) {
-      const seconds = totalMs / 1000;
-      let pos: number;
+      const s = totalMs / 1000;
+      let finalPos: number;
       if (isSin) {
-        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * seconds + phase);
-        pos = Math.max(minPos, Math.min(maxPos, Math.round(raw * 100) / 100));
+        const raw = center + amplitude * Math.sin(2 * Math.PI * adjustedFreq * s + Math.PI / 2);
+        finalPos = Math.round(Math.max(minPos, Math.min(maxPos, raw)) * 100) / 100;
       } else {
-        const cyclePosition = (seconds * adjustedFreq) % 1;
-        let normPos: number;
-        if (cyclePosition < withdrawalFraction) {
-          normPos = 1 - (cyclePosition / withdrawalFraction);
+        const cyclePosition = (s * adjustedFreq) % 1;
+        let norm: number;
+        if (cyclePosition < thrustFraction) {
+          norm = 1 - (cyclePosition / thrustFraction);
         } else {
-          normPos = (cyclePosition - withdrawalFraction) / thrustFraction;
+          norm = (cyclePosition - thrustFraction) / withdrawalFraction;
         }
-        pos = Math.max(minPos, Math.min(maxPos, Math.round((minPos + (maxPos - minPos) * normPos) * 100) / 100));
+        finalPos = Math.round((minPos + (maxPos - minPos) * norm) * 100) / 100;
       }
-      actions.push({ at: totalMs, pos });
+      actions.push({ at: totalMs, pos: finalPos });
     }
+
     return { version: '1.0', actions };
   }
+
   updateProgressLine(time: number) {
     if (this.chart) {
       try {
