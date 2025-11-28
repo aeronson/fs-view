@@ -137,6 +137,7 @@
 .video-block.vertical {
   flex-direction: row; /* video left, controls & others stacked on the right */
   align-items: stretch;
+  width: 100%;
 }
 
 /* In vertical (portrait) mode, let the video container fill the full available height
