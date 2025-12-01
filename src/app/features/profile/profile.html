@@ -1,0 +1,8 @@
+<!-- app.component.html -->
+<input type="text" [(ngModel)]="prompt" placeholder="Enter prompt">
+<input type="file" (change)="onFileChange($event)">
+<button (click)="sendRequest()">Send</button>
+<br/>
+<img *ngIf="imageBase64" [src]="'data:image/jpeg;base64,' + imageBase64" alt="Uploaded Image" width="200">
+<div *ngIf="response" [innerHTML]="response"></div>
+<div *ngIf="error">{{error}}</div>

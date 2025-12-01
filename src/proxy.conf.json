@@ -1,0 +1,11 @@
+{
+  "/grok-api": {
+    "target": "https://api.x.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/grok-api": "/v1/chat/completions"
+    },
+    "logLevel": "debug"
+  }
+}
