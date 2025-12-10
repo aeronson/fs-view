@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, signal, ViewChild, ElementRef, ChangeDetectorRef, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import * as Handy from '@ohdoki/handy-sdk';
+import { HandyService } from '../../core/handy.service';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
@@ -38,10 +38,13 @@ export class PlayerComponent {
   isVertical = false; // true if video has aspect ratio < 1 (portrait)
   isDefaultFunscript = false; // whether the current funscript is a generated default
 
-  handy: any;
+  scriptNumberIsIndex = false;
+
   connected = false;
   connectionKey = '';
   scriptUrl: string | null = null;
+
+  private handyService = inject(HandyService);
 
   @ViewChild('videoRef') videoRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('chartRef') chartRef!: ElementRef<HTMLCanvasElement>;
@@ -136,13 +139,16 @@ export class PlayerComponent {
         }
         tempFiles.sort((a, b) => this.getFileNumber(a) - this.getFileNumber(b));
 
+        const lastFileNumber = this.getFileNumber(tempFiles[tempFiles.length - 1]);
+        this.scriptNumberIsIndex = lastFileNumber <= 150; // file number was 6s index, changed to seconds;
+
         this.files = [];
         for (let i = 0; i < tempFiles.length; i++) {
           this.files.push(tempFiles[i]);
           if (i < tempFiles.length - 1) {
             const currentNum = this.getFileNumber(tempFiles[i]);
             const nextNum = this.getFileNumber(tempFiles[i + 1]);
-            const gap = nextNum - currentNum - 1;
+            const gap = this.scriptNumberIsIndex ? nextNum - currentNum - 1 : (nextNum - currentNum - 1) / 6;
             for (let j = 0; j < gap; j++) {
               this.files.push(tempFiles[i]);
             }
@@ -210,14 +216,8 @@ export class PlayerComponent {
     this.funscriptData = funscriptData;
     this.isDefaultFunscript = false;
 
-    if (this.connected && this.funscriptData) {
-      const scriptData = JSON.stringify(this.funscriptData);
-      this.scriptUrl = await this.handy.uploadDataToServer(scriptData);
-      await this.handy.setScript(this.scriptUrl);
-      await this.handy.sync();
-    }
-
     if (this.funscriptData) {
+      await this.setupHandyScript();
       this.cdr.detectChanges();
       requestAnimationFrame(() => {
         try {
@@ -235,7 +235,21 @@ export class PlayerComponent {
     }
   }
 
-  onLoadedMetadata() {
+  async setupHandyScript() {
+    if (!this.connected || !this.funscriptData) return;
+    try {
+      await this.handyService.mode(1);
+      const scriptData = JSON.stringify({ actions: this.funscriptData.actions });
+      this.scriptUrl = await this.handyService.syncPrepare(scriptData) as string;
+      await this.handyService.hsspSetup(this.scriptUrl);
+      await this.handyService.sync();
+      console.log('Handy script set successfully');
+    } catch (e) {
+      console.error('Error setting Handy script:', e);
+    }
+  }
+
+  async onLoadedMetadata() {
     this.videoDuration = this.videoRef.nativeElement.duration;
     try {
       const v = this.videoRef.nativeElement;
@@ -252,6 +266,7 @@ export class PlayerComponent {
       try {
         this.funscriptData = this.generateDefaultFunscript(this.selectedFile, this.videoDuration);
         this.isDefaultFunscript = true;
+        await this.setupHandyScript();
       } catch (e) {
         console.warn('Failed to generate default funscript:', e);
         this.isDefaultFunscript = false;
@@ -384,7 +399,7 @@ export class PlayerComponent {
       actions.push({ at: totalMs, pos: finalPos });
     }
 
-    return { version: '1.0', actions };
+    return { actions };
   }
 
   updateProgressLine(time: number) {
@@ -569,8 +584,15 @@ export class PlayerComponent {
       this.videoRef.nativeElement.currentTime = this.currentTime;
       this.updateProgressLine(this.currentTime);
       if (this.connected) {
-        await this.handy.hsspPlay(this.currentTime * 1000, this.handy.getEstimatedServerTime());
-        if (!this.isPlaying) await this.handy.hsspStop();
+        try {
+          const syncRes: any = await this.handyService.sync();
+          const offset = syncRes.offset;
+          const estimated = Date.now() + offset;
+          await this.handyService.hsspPlay(this.currentTime * 1000, estimated);
+          if (!this.isPlaying) await this.handyService.hsspStop();
+        } catch (e) {
+          console.error('Error seeking Handy:', e);
+        }
       }
     }
   }
@@ -648,24 +670,35 @@ export class PlayerComponent {
 
   async play() {
     if (this.videoRef) {
-      this.isPlaying = true;
-      await this.videoRef.nativeElement.play();
-      this.startAnimationLoop();
-      if (this.connected) {
-        await this.handy.hsspPlay(this.currentTime * 1000, this.handy.getEstimatedServerTime());
+      try {
+        this.isPlaying = true;
+        await this.videoRef.nativeElement.play();
+        this.startAnimationLoop();
+        if (this.connected) {
+          const syncRes: any = await this.handyService.sync();
+          const offset = syncRes.offset;
+          const estimated = Date.now() + offset;
+          await this.handyService.hsspPlay(this.currentTime * 1000, estimated);
+        }
+      } catch (e) {
+        console.error('Error playing:', e);
       }
     }
   }
 
   async pause() {
     if (this.videoRef) {
-      this.isPlaying = false;
-      this.videoRef.nativeElement.pause();
-      this.stopAnimationLoop();
-      this.currentTime = this.videoRef.nativeElement.currentTime;
-      this.updateProgressLine(this.currentTime);
-      if (this.connected) {
-        await this.handy.hsspStop();
+      try {
+        this.isPlaying = false;
+        this.videoRef.nativeElement.pause();
+        this.stopAnimationLoop();
+        this.currentTime = this.videoRef.nativeElement.currentTime;
+        this.updateProgressLine(this.currentTime);
+        if (this.connected) {
+          await this.handyService.hsspStop();
+        }
+      } catch (e) {
+        console.error('Error pausing:', e);
       }
     }
   }
@@ -703,8 +736,15 @@ export class PlayerComponent {
   }
 
   async connectToHandy() {
-    this.handy = Handy.init();
-    const result = await this.handy.connect(this.connectionKey);
-    if (result) this.connected = true;
+    this.handyService.setConnectionKey(this.connectionKey);
+    try {
+      const res: any = await this.handyService.connected();
+      this.connected = res.connected;
+      console.log('Connected:', this.connected);
+    } catch (e) {
+      console.error('Connection check error:', e);
+      this.connected = false;
+    }
+    this.cdr.detectChanges();
   }
 }

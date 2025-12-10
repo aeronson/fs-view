@@ -1,4 +1,5 @@
 <!-- app.component.html -->
+ <input type="text" [(ngModel)]="apiKey" placeholder="Api Key">
 <input type="text" [(ngModel)]="prompt" placeholder="Enter prompt">
 <input type="file" (change)="onFileChange($event)">
 <button (click)="sendRequest()">Send</button>

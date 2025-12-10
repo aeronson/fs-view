@@ -12,7 +12,8 @@ import { marked } from 'marked';
   styleUrls: ['./profile.scss'],
 })
 export class ProfileComponent {
-  prompt: string = 'analyze the subject. infer and extrapolate a detailed psychological profile.  infer and extrapolate a detailed physical profile.  infer and extrapolate a detailed behavioural profile.  infer and extrapolate a detailed sexual behavioural profile. infer and extrapolate preferred sex techniques for each of the standard sex phases.';
+  apiKey: string = '';
+  prompt: string = 'analyze the subject. create a maximal detail character sheet suitable for 3d rendering. infer and extrapolate a detailed psychological profile.  infer and extrapolate a detailed physical profile.  infer and extrapolate a detailed behavioural profile.  infer and extrapolate a detailed sexual behavioural profile. analyse and describe scene in maximal detail.';
   imageBase64: string = '';
   response: string = '';
   error: string = '';
@@ -38,12 +39,12 @@ export class ProfileComponent {
     this.prompt = '';
     
     const headers = new HttpHeaders({
-      'Authorization': 'Bearer API_KE', // Replace with your xAI API key
+      'Authorization': `Bearer ${this.apiKey}`, // Replace with your xAI API key
       'Content-Type': 'application/json'
     });
 
     const body = {
-      model: 'grok-4',
+      model: 'grok-2-vision-latest',
       messages: this.messages
     };
 
