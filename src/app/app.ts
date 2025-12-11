@@ -3,12 +3,13 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlayerComponent } from './features/player/player.component';
 import { ProfileComponent as ProfileComponent } from './features/profile/profile';
+import { MergeVideo } from './features/merge-video/merge-video';
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlayerComponent, ProfileComponent],
+  imports: [CommonModule, FormsModule, PlayerComponent, ProfileComponent, MergeVideo],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
