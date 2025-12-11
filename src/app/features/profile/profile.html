@@ -8,5 +8,7 @@
 <button (click)="processPipeline()">Send</button>
 <br />
 <img *ngIf="imageBase64" [src]="'data:image/jpeg;base64,' + imageBase64" alt="Uploaded Image" width="200">
-<div *ngFor="let response of pipelineResponses" [innerHTML]="response"></div>
+<div *ngFor="let response of pipelineResponses" [innerHTML]="getMarkdownContent(response)"></div>
 <div *ngIf="error">{{error}}</div>
+<br />
+<button (click)="onDownload()">Download</button>
