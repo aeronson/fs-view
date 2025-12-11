@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { marked } from 'marked';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
@@ -18,28 +19,52 @@ export class ProfileComponent {
   response: string = '';
   error: string = '';
   messages: any[] = [];
+  pipelinePrompts: string[] = [];
+  pipelineResponses: string[] = [];
 
   constructor(private http: HttpClient) { }
 
-  onFileChange(event: any) {
+  onCharacterFileChange(event: any) {
     const file = event.target.files[0];
     const reader = new FileReader();
     reader.onload = () => this.imageBase64 = (reader.result as string).split(',')[1];
     reader.readAsDataURL(file);
   }
 
-  sendRequest() {
-    const userContent = [{ type: 'text', text: this.prompt, image_url: { url : ''} }];
+  onPipelineFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    this.pipelinePrompts = [];
+    for (let i = 0; i < files.length; i++) {
+      const reader = new FileReader();
+      reader.onload = (e) => this.pipelinePrompts.push(reader.result as string);
+      reader.readAsText(files[i]); 
+    } 
+  }
+
+  async processPipeline() {
+    for (const pipePrompt of this.pipelinePrompts) {
+      this.prompt = pipePrompt;
+      this.pipelineResponses.push(await this.sendRequest() ?? '');
+    }
+    this.pipelinePrompts = [];
+  }
+
+  private async sendRequest(): Promise<string | undefined> {
+    const userContent = [{ type: 'text', text: this.prompt, image_url: { url: '' } }];
     if (this.imageBase64) {
-      userContent.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${this.imageBase64}` } } as any);
-      this.imageBase64 = '';
+      userContent.push({
+        type: 'image_url', 
+        image_url: { url: `data:image/jpeg;base64,${this.imageBase64}` },
+        text: ''
+      });
     }
     const userMessage = { role: 'user', content: userContent };
     this.messages.push(userMessage);
     this.prompt = '';
-    
+
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.apiKey}`, // Replace with your xAI API key
+      'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json'
     });
 
@@ -48,16 +73,15 @@ export class ProfileComponent {
       messages: this.messages
     };
 
-    this.http.post('https://api.x.ai/v1/chat/completions', body, { headers }).subscribe(
-      async (res: any) => {
-        const assistantMessage = { role: 'assistant', content: res.choices[0].message.content };
-        this.messages.push(assistantMessage);
-
-        this.response = await marked.parse(assistantMessage.content);
-
-      },
-      err => this.error = err.message
-    );
+    try {
+      const res: any = await firstValueFrom(this.http.post('https://api.x.ai/v1/chat/completions', body, { headers }));
+      const assistantMessage = { role: 'assistant', content: res.choices[0].message.content };
+      this.messages.push(assistantMessage);
+      const response = await marked.parse(assistantMessage.content) ?? ''
+      return response;
+    } catch (err: any) {
+      this.error = err.message;
+      return undefined;
+    }
   }
-
 }

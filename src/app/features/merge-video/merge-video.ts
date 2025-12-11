@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
   imports: [CommonModule, FormsModule],
   templateUrl: './merge-video.html',
   styleUrl: './merge-video.scss',
+  standalone: true,
 })
 export class MergeVideo {
   @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
