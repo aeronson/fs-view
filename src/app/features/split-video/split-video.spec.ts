@@ -1,18 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MergeVideo } from './merge-video';
+import { SplitVideo } from './split-video';
 
-describe('MergeVideo', () => {
-  let component: MergeVideo;
-  let fixture: ComponentFixture<MergeVideo>;
-
+describe('SplitVideoS', () => {
+  let component: SplitVideo;
+  let fixture: ComponentFixture<SplitVideo>;
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MergeVideo]
+      imports: [SplitVideo]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(MergeVideo);
+    fixture = TestBed.createComponent(SplitVideo);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
